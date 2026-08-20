@@ -1,0 +1,22 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+
+# IDE
+.vs/
+.idea/
+*.DotSettings.user
+
+# Node (clubmanager-client, added in a later step)
+node_modules/
+dist/
+.env
+.env.local
+
+# Local secrets - never commit a real signing key or connection string
+appsettings.Production.json
+appsettings.*.Local.json

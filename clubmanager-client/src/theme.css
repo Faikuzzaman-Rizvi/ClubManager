@@ -1,0 +1,68 @@
+/* =====================================================================
+   ClubManager design tokens.
+
+   Everything visual hangs off these variables - pages and future screens
+   should reach for a token, never a raw hex value.
+   ===================================================================== */
+
+:root {
+  /* ------------------------------------------------ palette: pitch green */
+  --green-950: #07281d;
+  --green-900: #0b3d2e; /* primary / sidebar */
+  --green-800: #124c39;
+  --green-700: #1a5c46;
+  --green-100: #dceae1;
+  --green-50: #edf3ef;
+
+  /* ------------------------------------------------ palette: accent gold */
+  --amber-600: #c18e2f;
+  --amber-500: #d9a441; /* primary actions, active nav, leader accent */
+  --amber-100: #f6ebd3;
+  --amber-700-text: #7a5a14; /* readable amber for text on light tints */
+
+  /* --------------------------------------------------- palette: neutrals */
+  --bg: #f7f8f6;
+  --surface: #ffffff;
+  --border: #e3e7e2;
+  --border-strong: #cbd3cd;
+  --text: #17201b;
+  --text-muted: #5e6b63;
+  --text-faint: #8b958f;
+
+  /* on-dark (sidebar, auth screen) */
+  --on-green: #e9f0ec;
+  --on-green-muted: #9db8ab;
+
+  /* --------------------------------------------------- palette: semantic */
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --danger-border: #fda29b;
+  --success: #1e7a44;
+  --success-bg: #eaf5ee;
+
+  /* --------------------------------------------------------- typography */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* type scale (minor third-ish, body at 15px) */
+  --text-xs: 0.75rem;    /* 12px - labels, badges, legends   */
+  --text-sm: 0.8125rem;  /* 13px - table headers, hints      */
+  --text-base: 0.9375rem;/* 15px - body, table cells         */
+  --text-md: 1.0625rem;  /* 17px - emphasized body           */
+  --text-lg: 1.25rem;    /* 20px - card titles               */
+  --text-xl: 1.5rem;     /* 24px - page title (top bar)      */
+  --text-2xl: 1.875rem;  /* 30px - auth brand                */
+  --text-3xl: 2.375rem;  /* 38px - reserved for heroes       */
+
+  /* ------------------------------------------------------- shape & depth */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(10, 30, 20, 0.06);
+  --shadow: 0 1px 3px rgba(10, 30, 20, 0.08), 0 4px 16px rgba(10, 30, 20, 0.05);
+  --shadow-lg: 0 4px 12px rgba(7, 40, 29, 0.25), 0 16px 48px rgba(7, 40, 29, 0.35);
+
+  /* ------------------------------------------------------------- layout */
+  --sidebar-w: 240px;
+}
