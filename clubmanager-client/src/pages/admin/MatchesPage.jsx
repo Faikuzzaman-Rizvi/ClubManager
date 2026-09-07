@@ -1,8 +1,17 @@
+import MatchManager from '../../components/MatchManager';
+import PageHeader from '../../components/ui/PageHeader';
+
 export default function MatchesPage() {
   return (
-    <div className="card">
-      <h1>Matches</h1>
-      <p className="muted">Placeholder. The Matches API is live at /api/matches - this screen is not wired up yet.</p>
-    </div>
+    <>
+      <PageHeader
+        title="Matches"
+        subtitle="Schedule fixtures across every team, enter results and record goals. Coaches can do the same for their own team only."
+      />
+
+      <div className="card">
+        <MatchManager />
+      </div>
+    </>
   );
 }

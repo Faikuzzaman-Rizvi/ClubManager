@@ -1,6 +1,9 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { apiErrorMessage } from '../../api/apiError';
+import PageHeader from '../../components/ui/PageHeader';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 
 const EMPTY_FORM = { teamName: '', city: '' };
 
@@ -27,6 +30,7 @@ export default function TeamsPage() {
 
   // Errors raised by a row's own save/delete, shown under that row.
   const [rowError, setRowError] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   // Every setState here runs after an await, so this stays safe to call
   // straight from an effect.
@@ -91,19 +95,18 @@ export default function TeamsPage() {
     }
   }
 
-  async function handleDelete(team) {
-    // Destructive and not undoable, so confirm before firing.
-    if (!window.confirm(`Delete ${team.teamName}?`)) {
-      return;
-    }
-
+  // Destructive and not undoable, so it goes through a confirmation dialog.
+  async function confirmDelete() {
+    const team = pendingDelete;
     setRowError(null);
     setBusyId(team.teamId);
 
     try {
       await axiosClient.delete(`/api/teams/${team.teamId}`);
+      setPendingDelete(null);
       await load();
     } catch (error) {
+      setPendingDelete(null);
       // A 409 here carries the API's own explanation of what still references
       // the team - show that rather than a generic failure message.
       setRowError({
@@ -116,14 +119,21 @@ export default function TeamsPage() {
   }
 
   if (loading) {
-    return <p className="muted">Loading teams...</p>;
+    return (
+      <div className="card">
+        <LoadingState rows={5} label="Loading teams" />
+      </div>
+    );
   }
 
   return (
-    <div className="card">
-      <h1>Teams</h1>
-      <p className="muted">Admin only. Coaches and players can read this list but not change it.</p>
+    <>
+      <PageHeader
+        title="Teams"
+        subtitle="Admin only. Coaches and players can read this list but not change it."
+      />
 
+      <div className="card">
       <form className="form-row" onSubmit={handleCreate}>
         <div className="field">
           <label htmlFor="new-team-name">Team name</label>
@@ -155,11 +165,13 @@ export default function TeamsPage() {
       )}
 
       {loadError ? (
-        <p className="error" role="alert">
-          {loadError}
-        </p>
+        <ErrorState message={loadError} onRetry={load} />
       ) : teams.length === 0 ? (
-        <p className="muted">No teams yet. Create the first one above.</p>
+        <EmptyState
+          icon="⬢"
+          title="No teams yet"
+          message="Create the first team above to start building the competition."
+        />
       ) : (
         <div className="table-scroll">
           <table>
@@ -214,7 +226,7 @@ export default function TeamsPage() {
                         </>
                       ) : (
                         <>
-                          <td>{team.teamName}</td>
+                          <td className="table-id">{team.teamName}</td>
                           <td>{team.city ?? <span className="muted">-</span>}</td>
                           <td className="actions-col">
                             <button
@@ -227,7 +239,7 @@ export default function TeamsPage() {
                             <button
                               type="button"
                               className="btn-link btn-danger"
-                              onClick={() => handleDelete(team)}
+                              onClick={() => setPendingDelete(team)}
                               disabled={isBusy}
                             >
                               {isBusy ? 'Working...' : 'Delete'}
@@ -251,6 +263,17 @@ export default function TeamsPage() {
           </table>
         </div>
       )}
-    </div>
+      </div>
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title="Delete team"
+        message={`Delete ${pendingDelete?.teamName}? This cannot be undone, and is refused while players, coaches or matches still reference the team.`}
+        confirmLabel="Delete team"
+        busy={busyId === pendingDelete?.teamId}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </>
   );
 }

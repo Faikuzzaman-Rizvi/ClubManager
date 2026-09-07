@@ -1,7 +1,12 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { apiErrorMessage } from '../../api/apiError';
+import Pagination from '../../components/Pagination';
+import PageHeader from '../../components/ui/PageHeader';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 
+const PAGE_SIZE = 10;
 const EMPTY_FORM = { name: '', position: '', jerseyNumber: '', age: '', teamId: '', userId: '' };
 
 /**
@@ -28,6 +33,8 @@ export default function PlayersPage() {
   const [linkedUserIds, setLinkedUserIds] = useState(new Set());
 
   const [teamFilter, setTeamFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
@@ -39,6 +46,7 @@ export default function PlayersPage() {
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [busyId, setBusyId] = useState(null);
   const [rowError, setRowError] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -133,19 +141,18 @@ export default function PlayersPage() {
     }
   }
 
-  async function handleDelete(player) {
-    if (!window.confirm(`Delete ${player.name}?`)) {
-      return;
-    }
-
+  async function confirmDelete() {
+    const player = pendingDelete;
     setRowError(null);
     setBusyId(player.playerId);
 
     try {
       await axiosClient.delete(`/api/players/${player.playerId}`);
+      setPendingDelete(null);
       await load();
     } catch (error) {
       // A 409 carries the API's own reason (recorded goals) - show it verbatim.
+      setPendingDelete(null);
       setRowError({
         playerId: player.playerId,
         message: apiErrorMessage(error, 'Could not delete the player.'),
@@ -156,16 +163,35 @@ export default function PlayersPage() {
   }
 
   if (loading) {
-    return <p className="muted">Loading players...</p>;
+    return (
+      <div className="card">
+        <LoadingState rows={6} label="Loading players" />
+      </div>
+    );
   }
 
-  return (
-    <div className="card">
-      <h1>Players</h1>
-      <p className="muted">
-        Every squad in the club. Coaches manage their own team from their own screen.
-      </p>
+  // The team filter is applied by the API; name/position search and paging are
+  // client-side, since the list endpoint offers neither.
+  const term = search.trim().toLowerCase();
+  const filtered = players.filter(
+    (player) =>
+      !term ||
+      player.name.toLowerCase().includes(term) ||
+      (player.position ?? '').toLowerCase().includes(term),
+  );
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  return (
+    <>
+      <PageHeader
+        title="Players"
+        subtitle="Every squad in the club. Coaches manage their own team from their own screen."
+      />
+
+      <div className="card">
       <form className="form-row" onSubmit={handleCreate}>
         <div className="field">
           <label htmlFor="new-name">Name</label>
@@ -255,7 +281,10 @@ export default function PlayersPage() {
         <select
           id="team-filter"
           value={teamFilter}
-          onChange={(e) => setTeamFilter(e.target.value)}
+          onChange={(e) => {
+            setTeamFilter(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">All Teams</option>
           {teams.map((team) => (
@@ -264,15 +293,34 @@ export default function PlayersPage() {
             </option>
           ))}
         </select>
+
+        <label htmlFor="player-search">Search</label>
+        <input
+          id="player-search"
+          type="search"
+          placeholder="Name or position"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
       </div>
 
       {loadError ? (
-        <p className="error" role="alert">
-          {loadError}
-        </p>
-      ) : players.length === 0 ? (
-        <p className="muted">No players here yet.</p>
+        <ErrorState message={loadError} onRetry={load} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon="⚉"
+          title={players.length === 0 ? 'No players here yet' : 'No matches for that search'}
+          message={
+            players.length === 0
+              ? 'Add a player above, or pick a different team from the filter.'
+              : 'Try a different name or position, or clear the search.'
+          }
+        />
       ) : (
+        <>
         <div className="table-scroll">
           <table>
             <thead>
@@ -287,7 +335,7 @@ export default function PlayersPage() {
               </tr>
             </thead>
             <tbody>
-              {players.map((player) => {
+              {visible.map((player) => {
                 const isEditing = editingId === player.playerId;
                 const isBusy = busyId === player.playerId;
 
@@ -390,7 +438,7 @@ export default function PlayersPage() {
                               <span className="muted">-</span>
                             )}
                           </td>
-                          <td>{player.name}</td>
+                          <td className="table-id">{player.name}</td>
                           <td>{player.position ?? <span className="muted">-</span>}</td>
                           <td>{player.teamName}</td>
                           <td className="num">
@@ -416,7 +464,7 @@ export default function PlayersPage() {
                             <button
                               type="button"
                               className="btn-link btn-danger"
-                              onClick={() => handleDelete(player)}
+                              onClick={() => setPendingDelete(player)}
                               disabled={isBusy}
                             >
                               {isBusy ? 'Working...' : 'Delete'}
@@ -439,7 +487,27 @@ export default function PlayersPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          total={filtered.length}
+          onPageChange={setPage}
+          noun="players"
+        />
+        </>
       )}
-    </div>
+      </div>
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title="Delete player"
+        message={`Delete ${pendingDelete?.name}? This cannot be undone, and is refused while goals are recorded against them.`}
+        confirmLabel="Delete player"
+        busy={busyId === pendingDelete?.playerId}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </>
   );
 }

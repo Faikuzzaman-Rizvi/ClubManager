@@ -1,68 +1,95 @@
 /* =====================================================================
    ClubManager design tokens.
 
-   Everything visual hangs off these variables - pages and future screens
-   should reach for a token, never a raw hex value.
+   One dark, football-inspired system shared by the whole product - the
+   signed-in app, the public stats pages and the landing page all read from
+   here. Pages should reach for a token, never a raw hex value.
+
+   Palette discipline: a deep charcoal-green ground, one amber club accent,
+   and muted semantic colours used only to carry meaning.
    ===================================================================== */
 
 :root {
-  /* ------------------------------------------------ palette: pitch green */
-  --green-950: #07281d;
-  --green-900: #0b3d2e; /* primary / sidebar */
-  --green-800: #124c39;
-  --green-700: #1a5c46;
-  --green-100: #dceae1;
-  --green-50: #edf3ef;
+  /* -------------------------------------------------- ground & surfaces */
+  --bg: #0a100d;            /* app background            */
+  --bg-deep: #070c0a;       /* sidebar, hero, footers    */
+  --surface: #111917;       /* cards, panels             */
+  --surface-2: #16211d;     /* raised rows, inputs       */
+  --surface-3: #1c2924;     /* hover / selected          */
 
-  /* ------------------------------------------------ palette: accent gold */
-  --amber-600: #c18e2f;
-  --amber-500: #d9a441; /* primary actions, active nav, leader accent */
-  --amber-100: #f6ebd3;
-  --amber-700-text: #7a5a14; /* readable amber for text on light tints */
+  /* ---------------------------------------------------------- borders */
+  --border: rgba(255, 255, 255, 0.09);
+  --border-soft: rgba(255, 255, 255, 0.055);
+  --border-strong: rgba(255, 255, 255, 0.17);
 
-  /* --------------------------------------------------- palette: neutrals */
-  --bg: #f7f8f6;
-  --surface: #ffffff;
-  --border: #e3e7e2;
-  --border-strong: #cbd3cd;
-  --text: #17201b;
-  --text-muted: #5e6b63;
-  --text-faint: #8b958f;
+  /* ------------------------------------------------------------- text */
+  --text: #e9f1ec;
+  --text-muted: #93a79c;
+  --text-faint: #667a70;
+  --text-on-accent: #0a1a11;
 
-  /* on-dark (sidebar, auth screen) */
-  --on-green: #e9f0ec;
-  --on-green-muted: #9db8ab;
+  /* ------------------------------------------------ club accent (amber) */
+  --accent: #d9a441;
+  --accent-hover: #e9b757;
+  --accent-dim: rgba(217, 164, 65, 0.14);
+  --accent-line: rgba(217, 164, 65, 0.4);
 
-  /* --------------------------------------------------- palette: semantic */
-  --danger: #b42318;
-  --danger-bg: #fef3f2;
-  --danger-border: #fda29b;
-  --success: #1e7a44;
-  --success-bg: #eaf5ee;
+  /* Secondary brand green, used sparingly for pitch cues. */
+  --pitch: #2f9e6a;
+  --pitch-dim: rgba(47, 158, 106, 0.14);
 
-  /* --------------------------------------------------------- typography */
+  /* --------------------------------------------------------- semantic */
+  --success: #46b781;
+  --success-bg: rgba(70, 183, 129, 0.13);
+  --warning: #d9a441;
+  --warning-bg: rgba(217, 164, 65, 0.13);
+  --danger: #e0685f;
+  --danger-bg: rgba(224, 104, 95, 0.13);
+  --danger-border: rgba(224, 104, 95, 0.4);
+
+  /* ------------------------------------------------------- typography */
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* type scale (minor third-ish, body at 15px) */
-  --text-xs: 0.75rem;    /* 12px - labels, badges, legends   */
-  --text-sm: 0.8125rem;  /* 13px - table headers, hints      */
-  --text-base: 0.9375rem;/* 15px - body, table cells         */
-  --text-md: 1.0625rem;  /* 17px - emphasized body           */
-  --text-lg: 1.25rem;    /* 20px - card titles               */
-  --text-xl: 1.5rem;     /* 24px - page title (top bar)      */
-  --text-2xl: 1.875rem;  /* 30px - auth brand                */
-  --text-3xl: 2.375rem;  /* 38px - reserved for heroes       */
+  --text-xs: 0.75rem;     /* 12 - captions, badges, labels  */
+  --text-sm: 0.8125rem;   /* 13 - table headers, hints      */
+  --text-base: 0.9375rem; /* 15 - body, cells               */
+  --text-md: 1.0625rem;   /* 17 - emphasised body           */
+  --text-lg: 1.25rem;     /* 20 - card titles               */
+  --text-xl: 1.5rem;      /* 24 - page title                */
+  --text-2xl: 1.875rem;   /* 30 - display                   */
+  --text-3xl: 2.375rem;   /* 38 - hero-adjacent             */
 
-  /* ------------------------------------------------------- shape & depth */
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  /* ------------------------------------------------------------ space */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* ------------------------------------------------- shape and depth */
+  /* Restrained radii - panels read as precise, not cartoonish. */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
   --radius-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(10, 30, 20, 0.06);
-  --shadow: 0 1px 3px rgba(10, 30, 20, 0.08), 0 4px 16px rgba(10, 30, 20, 0.05);
-  --shadow-lg: 0 4px 12px rgba(7, 40, 29, 0.25), 0 16px 48px rgba(7, 40, 29, 0.35);
 
-  /* ------------------------------------------------------------- layout */
-  --sidebar-w: 240px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+
+  /* ----------------------------------------------------------- layout */
+  --sidebar-w: 244px;
+  --topbar-h: 62px;
+  --content-max: 1220px;
+
+  /* Legacy aliases: kept so older rules keep resolving while the system
+     converges on the semantic names above. */
+  --amber-500: var(--accent);
+  --amber-600: var(--accent-hover);
+  --green-900: var(--bg-deep);
+  --green-950: var(--bg-deep);
+  --green-50: var(--surface-3);
 }

@@ -3,8 +3,9 @@
 Football club management system. Backend is an ASP.NET Core 8 Web API using Dapper
 against SQL Server; see [CLAUDE.md](CLAUDE.md) for the full project plan.
 
-**Status:** Backend phases 0-5 complete. Frontend scaffolded: auth, routing and
-the two public stats pages work end to end; the role dashboards are placeholders.
+**Status:** Backend phases 0-5 complete. Frontend phase 6 complete - every screen
+is wired to the API, with no placeholders left. Phase 7 covers search and
+pagination; player self-edit is not implemented (see below).
 
 ## Layout
 
@@ -214,8 +215,21 @@ completed matches.
 ## Frontend (clubmanager-client)
 
 React 19 + Vite, `axios` and `react-router-dom`. Styling is plain CSS driven by
-design tokens in `src/theme.css` (pitch-green + amber palette, Barlow Condensed
-headings, Inter body) - new screens should use the tokens, never raw hex values.
+design tokens in `src/theme.css` - a dark charcoal-green ground with a single
+amber club accent, Barlow Condensed headings and Inter body. New screens should
+use the tokens, never raw hex values; `landing.css` aliases the same tokens
+rather than defining a second palette, so the landing page and the app cannot
+drift apart.
+
+Shared building blocks live in `components/ui` (`PageHeader`, `ConfirmDialog`,
+and the `LoadingState` / `EmptyState` / `ErrorState` trio), `components/layout`
+(`AppShell`, `Sidebar`, `TopBar`) and `components/dashboard` (`StatCard`,
+`MatchList`, `StandingsWidget`, `TopScorersWidget`). Destructive actions go
+through `ConfirmDialog` rather than `window.confirm`.
+
+The public landing page at `/` adds `three` + `@react-three/fiber` + `@react-three/drei`
+(the hero ball) and `gsap` + ScrollTrigger (entrance and scroll animation). Both
+are code-split: the signed-in app never downloads them.
 
 ```bash
 cd clubmanager-client
@@ -231,20 +245,68 @@ the Vite origin in `Cors:AllowedOrigins`.
 src/
   api/axiosClient.js      # base instance, JWT request interceptor, 401 handling
   api/useFetch.js         # small GET hook for the read-only pages
+  api/useLandingData.js   # landing page data, gated by what the visitor may read
+  api/useDashboardData.js # dashboard feed for Admin and Coach
+  animations/gsapAnimations.js  # shared reveal/counter/hero motion
+  components/ui/          # PageHeader, ConfirmDialog, Loading/Empty/Error states
+  components/layout/      # AppShell, Sidebar, TopBar (mobile drawer lives here)
+  components/dashboard/   # StatCard, MatchList, StandingsWidget, TopScorersWidget
+  pages/admin/Dashboard.jsx     # "/admin" - KPIs, results, fixtures, widgets
+  pages/coach/Dashboard.jsx     # "/coach" - the same, scoped to one team
+  components/landing/     # LandingNav, Hero, HeroScene (3D) and the sections
+  pages/LandingPage.jsx   # public "/" - own dark chrome, outside the app shell
+  landing.css             # landing-only styles, scoped under .ld-root
   context/AuthContext.jsx # user / role / token, login+logout, localStorage backed
   routes/ProtectedRoute.jsx
   components/Sidebar.jsx  # role-aware left nav (Admin/Coach/Player sections)
   components/TopBar.jsx   # page title + user chip and logout
+  components/MatchManager.jsx  # fixtures/results/goals board, shared Admin+Coach
+  components/Pagination.jsx    # client-side pager for the list screens
+  helpers/datetime.js     # match-date formatting; see the timezone note below
   theme.css               # design tokens - colors, type scale, radii, shadows
   pages/public/           # StandingsPage, TopScorersPage - live, no login needed
-  pages/admin/ coach/ player/   # placeholders, gated by ProtectedRoute
+  pages/admin/ coach/ player/   # all live, gated by ProtectedRoute
 ```
 
-What works today: logging in, the token surviving a refresh, role-based redirects
-and guards, the two public stats tables, and the Admin Teams and Players screens
-(full CRUD, team filter, login-linking). Everything under
-`/admin`, `/coach` and `/player` renders a placeholder card - the APIs behind them
-are live but not yet wired to screens.
+Every screen is wired to the API: Admin teams, players, matches and user
+accounts; the Coach's own squad and fixture board; the Player's profile. The
+Admin matches screen and the Coach fixtures screen are the same component -
+passing `scopeTeamId` narrows it to one team and swaps the two team pickers for
+a venue + opponent pair, so a coach cannot compose a fixture they are not in.
+
+**Match dates carry no timezone.** The API serialises `MatchDate` with
+`Kind=Unspecified`, and JS parses that form as local time, so a wall-clock value
+survives the round trip only while nothing converts through UTC. That rules out
+`toISOString()` when building a payload - `helpers/datetime.js` passes the
+`datetime-local` string through instead.
+
+**Phase 7:** search and pagination are in place on the players, users and match
+lists. Player self-edit is **not** implemented: `PUT /api/players/{id}` is
+`[Authorize(Roles = "Admin,Coach")]`, so a Player token gets 403 and there is no
+self-service endpoint to call. It needs a backend change first.
+
+### Landing page (`/`)
+
+A public marketing home page with a 3D hero ball and GSAP scroll animation. It
+sits outside the app shell and brings its own dark chrome; `/standings`,
+`/topscorers`, `/login` and every guarded route are untouched.
+
+Only `/api/stats/*` is anonymous, so the page is built around that: the hero,
+the stat counters, the standings preview and the top-scorer preview all work
+signed out, deriving their figures from `/api/stats/standings` alone (league
+totals - each match is counted once per side, so `played` is halved). The
+sections that need `/api/matches` or `/api/players` render a "sign in to view"
+state instead of firing a request that would 401 and bounce the visitor to the
+login screen.
+
+Navbar section links scroll within the page rather than pointing at
+`/admin/teams` and friends, which are Admin-only; each section carries its own
+CTA through to the real route.
+
+The 3D scene loads only when WebGL is available and is wrapped in an error
+boundary, so a missing or failing GPU leaves the page fully usable. Everything
+honours `prefers-reduced-motion`: GSAP is skipped entirely and the ball stops
+animating, with content rendered in its final state rather than mid-animation.
 
 The token lives in `localStorage`, so it is readable by any script on the origin.
 That is the usual trade-off for a JWT SPA and fine for this project; a real

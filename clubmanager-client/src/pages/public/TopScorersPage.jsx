@@ -1,44 +1,74 @@
 import useFetch from '../../api/useFetch';
+import PageHeader from '../../components/ui/PageHeader';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+
+const PODIUM = 3;
 
 export default function TopScorersPage() {
   const { data: scorers, error, loading } = useFetch('/api/stats/topscorers');
 
-  if (loading) return <p className="muted">Loading top scorers...</p>;
-  if (error) return <p className="error" role="alert">{error}</p>;
+  if (loading) {
+    return (
+      <div className="card">
+        <LoadingState rows={6} label="Loading top scorers" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card">
+        <ErrorState message={error} />
+      </div>
+    );
+  }
 
   return (
-    <div className="card">
-      <h1>Top Scorers</h1>
-      <p className="muted">Goals from every match on record. Only players who have scored appear.</p>
+    <>
+      <PageHeader
+        title="Top Scorers"
+        subtitle="Goals from every match on record. Only players who have scored appear."
+      />
 
-      {scorers.length === 0 ? (
-        <p className="muted">No goals recorded yet.</p>
-      ) : (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th className="pos-cell">#</th>
-                <th>Player</th>
-                <th>Team</th>
-                <th className="num">Goals</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scorers.map((row, index) => (
-                <tr key={row.playerId}>
-                  <td className="pos-cell">
-                    <span className="pos-num">{index + 1}</span>
-                  </td>
-                  <td>{row.playerName}</td>
-                  <td>{row.teamName}</td>
-                  <td className="num strong">{row.goals}</td>
+      <div className="card">
+        {scorers.length === 0 ? (
+          <EmptyState
+            icon="◎"
+            title="No goals recorded yet"
+            message="The chart fills in as goals are credited to players."
+          />
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th className="pos-cell">#</th>
+                  <th>Player</th>
+                  <th>Team</th>
+                  <th className="num">Goals</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+              </thead>
+              <tbody>
+                {scorers.map((row, index) => (
+                  <tr key={row.playerId} className={index === 0 ? 'pos-leader' : ''}>
+                    <td className="pos-cell">
+                      <span className="pos-num">{index + 1}</span>
+                    </td>
+                    <td className="table-id">{row.playerName}</td>
+                    <td>{row.teamName}</td>
+                    <td className="num strong">
+                      {row.goals}
+                      {index < PODIUM && (
+                        <span className="visually-hidden"> - top {PODIUM} scorer</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
