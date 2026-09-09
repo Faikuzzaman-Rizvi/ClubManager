@@ -1,3 +1,5 @@
+import Icon from './ui/Icon';
+
 /**
  * Client-side pager for the list screens. The API returns whole collections, so
  * the slicing happens in the page component and this only renders the controls.
@@ -15,29 +17,33 @@ export default function Pagination({ page, pageSize, total, onPageChange, noun =
   return (
     <div className="pager">
       <span className="muted">
-        Showing {first}-{last} of {total} {noun}
+        Showing <strong>{first}–{last}</strong> of <strong>{total}</strong> {noun}
       </span>
 
       {pageCount > 1 && (
         <span className="pager-controls">
           <button
             type="button"
-            className="btn-link"
+            className="btn-secondary btn-small pager-btn"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
+            aria-label="Previous page"
           >
-            Previous
+            <Icon name="chevronLeft" size={14} />
+            <span>Prev</span>
           </button>
-          <span className="muted">
+          <span className="pager-indicator">
             Page {page} of {pageCount}
           </span>
           <button
             type="button"
-            className="btn-link"
+            className="btn-secondary btn-small pager-btn"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= pageCount}
+            aria-label="Next page"
           >
-            Next
+            <span>Next</span>
+            <Icon name="chevronRight" size={14} />
           </button>
         </span>
       )}

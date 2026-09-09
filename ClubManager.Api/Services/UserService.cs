@@ -21,7 +21,9 @@ public class UserService : IUserService
             UserId = user.UserId,
             Username = user.Username,
             Role = user.Role,
-            TeamId = user.TeamId
+            TeamId = user.TeamId,
+            AvatarUrl = user.EffectiveAvatarUrl,
+            HasOwnAvatar = user.AvatarUrl is not null
         }).ToList();
     }
 }

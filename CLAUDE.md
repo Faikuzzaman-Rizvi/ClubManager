@@ -88,9 +88,68 @@ CREATE TABLE Goals (
 - `Players.UserId` is null unless that player has a login account; uniqueness is
   enforced by the filtered index `UX_Players_UserId`, so any number of players may
   have no login.
-- Scripts that touch `Players` need `SET QUOTED_IDENTIFIER ON` (required for any
-  DML against a table carrying a filtered index). The `.sql` files set it; ad-hoc
-  `sqlcmd` needs the `-I` flag. `SqlClient` sets it on by default, so the API is fine.
+- Migration 004 adds `Players.ImageUrl`, `Teams.LogoUrl` and `Users.AvatarUrl`,
+  all nullable. Only the URL lives in SQL Server; the file is on disk under the
+  API's upload root and served from `/uploads`. See section 4 and the README.
+- Anything touching `Players` needs `SET QUOTED_IDENTIFIER ON` (required for any
+  DML against a table carrying a filtered index, and for creating any view or
+  procedure that reads one). The publisher and `SqlClient` both set it; ad-hoc
+  `sqlcmd` needs the `-I` flag.
+
+### How the database is built and deployed
+
+One file per object under `database/`, applied by a publisher project:
+
+```
+database/
+├── Migrations/          # schema changes, run once each, tracked in dbo.__SchemaVersions
+├── Views/               # one view per file, CREATE OR ALTER
+├── StoredProcedures/    # one procedure per file, foldered by table
+├── Seed/                # idempotent reference data
+└── DemoData/            # opt-in, destructive
+ClubManager.Database/    # the publisher
+```
+
+```bash
+dotnet run --project ClubManager.Database
+```
+
+Creates the database if missing, applies unseen migrations (one transaction
+each), re-applies every view and procedure, then seeds. Safe to re-run; that is
+how you pick up someone else's database change after a pull. Editing a migration
+that has already been applied fails the publish on a checksum mismatch. Full
+detail in `database/README.md`.
+
+There is no `Tables/` folder: a table cannot be `CREATE OR ALTER`d without losing
+its rows, so table history lives entirely in `Migrations/`.
+
+### Views, stored procedures and indexes
+
+**Views** — reusable reads only, no `ORDER BY` (the repositories sort):
+`vw_PlayerProfile`, `vw_MatchDetails`, `vw_MatchGoals`, `vw_Standings`,
+`vw_TopScorers`, `vw_UserProfile`. Each carries the image URLs of the rows it
+returns, so no list needs a second request per row. `vw_UserProfile` also owns
+the avatar fallback (the account's own avatar, else the linked player's photo)
+and deliberately excludes the password hash.
+
+**Procedures** — every write path: `User_Create`, `User_GetByUsername`,
+`Team_Create/Update/Delete`, `Player_Create/Update/Delete`,
+`Match_Create/Update/Delete`, `Goal_Create/Delete`, plus the image writes
+`Player_SetImage`, `Team_SetLogo` and `User_SetAvatar`, each returning the URL it
+replaced so the API can delete that file. `Player_AssertWritable` and
+`Match_AssertWritable` hold the rules shared by the create and update paths.
+`Match_Delete` and `Goal_Delete` are defined but not yet exposed by any endpoint.
+
+Procedures enforce data integrity only — never authorisation, which stays in the
+service layer. Business failures the caller must render (a blocked delete and its
+counts) come back as a result row; broken invariants raise `THROW` with an error
+number of 50000 or above, which `Middleware/DatabaseExceptionHandler.cs` turns
+into a 409.
+
+**Indexes added:** `UX_Players_Team_Jersey` (filtered unique on
+`(TeamId, JerseyNumber)`) and `IX_Matches_Standings` (`Status` including both
+team ids and both scores), both in migration 003. That migration also records the
+indexes considered and deliberately left out, with the reason.
 
 ---
 
@@ -119,18 +178,31 @@ ClubManager.Api/
 │   ├── Entities/           (Team, Player, Match, Goal, User)
 │   └── Dtos/                (Request/Response DTOs)
 ├── Middleware/
-│   └── JwtMiddleware.cs (or use built-in JwtBearer)
+│   └── DatabaseExceptionHandler.cs   (SQL errors -> 409 / opaque 500)
 ├── Helpers/
-│   └── DbConnectionFactory.cs   (creates SqlConnection from connection string)
+│   ├── DbConnectionFactory.cs   (creates SqlConnection from connection string)
+│   └── ImageStorage.cs          (validates, re-encodes and stores uploads)
+├── wwwroot/uploads/             (stored images, served as static files)
 ├── appsettings.json
 └── Program.cs
 ```
 
 **Key design points:**
 - `DbConnectionFactory` — single place returning `IDbConnection`, injected into repositories.
-- Repositories use raw parameterized SQL via Dapper (`QueryAsync`, `ExecuteAsync`) — never string-concatenated SQL.
+- Repositories use Dapper against the database objects above — never string-concatenated SQL:
+  - **mutations** call a stored procedure (`commandType: CommandType.StoredProcedure`),
+  - **reusable and aggregating reads** select from a view,
+  - **single-table lookups by key** stay as inline parameterized SQL, where a
+    procedure or view would add a name to maintain and nothing else.
 - `[Authorize(Roles = "Admin")]` / `[Authorize(Roles = "Admin,Coach")]` on controllers/actions.
 - For Coach-scoped actions (e.g. edit own team's player), check `TeamId` from JWT claims against the resource's `TeamId` inside the service layer — don't rely on route params alone.
+- **Image uploads** go through `ImageStorage`: extension + content type + file
+  signature are all checked, then the image is decoded and re-encoded to WebP by
+  ImageSharp (Apache-2.0). The uploaded filename is never used — names are a
+  server-chosen GUID. `ImageService` owns the authorisation and the
+  upload → store → record → delete-the-old sequence; a Coach may only photograph
+  their own squad, and a Player may set their account avatar but not their own
+  player photo.
 
 ---
 
@@ -216,7 +288,7 @@ src/
 ### Phase 0 — Setup
 - Create solution: `ClubManager.Api` (Web API project)
 - Create React app: `clubmanager-client` (Vite)
-- Set up SQL Server DB, run schema script, seed one Admin user
+- Set up SQL Server DB: `dotnet run --project ClubManager.Database`
 
 ### Phase 1 — Auth
 - JWT login/register (Admin creates Coach/Player users)

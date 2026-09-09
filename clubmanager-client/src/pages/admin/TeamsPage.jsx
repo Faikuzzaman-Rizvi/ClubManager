@@ -3,7 +3,11 @@ import axiosClient from '../../api/axiosClient';
 import { apiErrorMessage } from '../../api/apiError';
 import PageHeader from '../../components/ui/PageHeader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import EntityImage from '../../components/ui/EntityImage';
+import ImageUpload from '../../components/ui/ImageUpload';
+import { imageEndpoints } from '../../api/images';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import Icon from '../../components/ui/Icon';
 
 const EMPTY_FORM = { teamName: '', city: '' };
 
@@ -52,6 +56,17 @@ export default function TeamsPage() {
     // eslint-disable-next-line react/set-state-in-effect
     load();
   }, [load]);
+
+  /*
+   * Folds a crest change into the loaded list. The upload has already been
+   * stored by the time this runs, so this is a local sync rather than a save -
+   * which is what keeps the table from having to reload after every image.
+   */
+  function applyLogo(teamId, logoUrl) {
+    setTeams((current) =>
+      current.map((team) => (team.teamId === teamId ? { ...team, logoUrl } : team)),
+    );
+  }
 
   async function handleCreate(event) {
     event.preventDefault();
@@ -141,6 +156,7 @@ export default function TeamsPage() {
             id="new-team-name"
             value={createForm.teamName}
             onChange={(e) => setCreateForm({ ...createForm, teamName: e.target.value })}
+            placeholder="e.g. Real Madrid"
           />
         </div>
 
@@ -150,11 +166,13 @@ export default function TeamsPage() {
             id="new-team-city"
             value={createForm.city}
             onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
+            placeholder="e.g. Madrid"
           />
         </div>
 
         <button type="submit" className="btn-primary" disabled={creating}>
-          {creating ? 'Creating...' : 'Create team'}
+          <Icon name="plus" size={15} />
+          <span>{creating ? 'Creating...' : 'Create team'}</span>
         </button>
       </form>
 
@@ -177,6 +195,7 @@ export default function TeamsPage() {
           <table>
             <thead>
               <tr>
+                <th className="crest-col">Crest</th>
                 <th>Team</th>
                 <th>City</th>
                 <th className="actions-col">Actions</th>
@@ -192,6 +211,19 @@ export default function TeamsPage() {
                     <tr>
                       {isEditing ? (
                         <>
+                          <td className="crest-col">
+                            {/* The crest saves on its own the moment it is
+                                chosen - it is not part of the row's Save, so
+                                cancelling an edit does not undo it. */}
+                            <ImageUpload
+                              endpoint={imageEndpoints.teamLogo(team.teamId)}
+                              value={team.logoUrl}
+                              name={team.teamName}
+                              variant="logo"
+                              helpText="Saved immediately."
+                              onChange={(logoUrl) => applyLogo(team.teamId, logoUrl)}
+                            />
+                          </td>
                           <td>
                             <input
                               aria-label="Team name"
@@ -211,39 +243,56 @@ export default function TeamsPage() {
                             />
                           </td>
                           <td className="actions-col">
-                            <button
-                              type="button"
-                              className="btn-primary btn-small"
-                              onClick={() => handleSave(team.teamId)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? 'Saving...' : 'Save'}
-                            </button>
-                            <button type="button" className="btn-link" onClick={cancelEdit}>
-                              Cancel
-                            </button>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn-action btn-action-save"
+                                onClick={() => handleSave(team.teamId)}
+                                disabled={isBusy}
+                              >
+                                <Icon name="check" size={14} />
+                                <span>{isBusy ? 'Saving...' : 'Save'}</span>
+                              </button>
+                              <button type="button" className="btn-action btn-action-cancel" onClick={cancelEdit}>
+                                <span>Cancel</span>
+                              </button>
+                            </div>
                           </td>
                         </>
                       ) : (
                         <>
+                          <td className="crest-col">
+                            <EntityImage
+                              src={team.logoUrl}
+                              name={team.teamName}
+                              variant="logo"
+                              className="entity-image-lg"
+                            />
+                          </td>
                           <td className="table-id">{team.teamName}</td>
                           <td>{team.city ?? <span className="muted">-</span>}</td>
                           <td className="actions-col">
-                            <button
-                              type="button"
-                              className="btn-link"
-                              onClick={() => startEdit(team)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-link btn-danger"
-                              onClick={() => setPendingDelete(team)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? 'Working...' : 'Delete'}
-                            </button>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn-action btn-action-edit"
+                                onClick={() => startEdit(team)}
+                                title="Edit Team"
+                              >
+                                <Icon name="edit" size={14} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action btn-action-delete"
+                                onClick={() => setPendingDelete(team)}
+                                disabled={isBusy}
+                                title="Delete Team"
+                              >
+                                <Icon name="trash" size={14} />
+                                <span>{isBusy ? '...' : 'Delete'}</span>
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -251,7 +300,7 @@ export default function TeamsPage() {
 
                     {rowError?.teamId === team.teamId && (
                       <tr className="row-error">
-                        <td colSpan={3} role="alert">
+                        <td colSpan={4} role="alert">
                           {rowError.message}
                         </td>
                       </tr>

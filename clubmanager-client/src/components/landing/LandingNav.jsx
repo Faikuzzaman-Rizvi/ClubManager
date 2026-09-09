@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { homePathForRole } from '../../routes/roleHome';
+import Icon from '../ui/Icon';
 
 /*
  * The landing page's own chrome. The signed-in app uses Sidebar + TopBar; this
@@ -80,7 +81,7 @@ export default function LandingNav() {
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span aria-hidden="true">{menuOpen ? '✕' : '☰'}</span>
+          <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
         </button>
 
         <nav

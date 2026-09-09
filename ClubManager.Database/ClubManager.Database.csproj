@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ClubManager.Database</RootNamespace>
+    <AssemblyName>ClubManager.Database</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The only dependency, and the API already uses it. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The scripts travel with the tool. Copying them into the build output means
+      publish works from a compiled binary on a deployment box, not just from a
+      checkout - and `dotnet run` picks up edits because the copy is incremental.
+      LinkBase keeps the Migrations/Views/StoredProcedures/... layout intact.
+    -->
+    <Content Include="..\database\**\*.sql"
+             LinkBase="database"
+             CopyToOutputDirectory="PreserveNewest" />
+
+    <!-- The console SDK does not copy this the way the Web SDK does. -->
+    <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

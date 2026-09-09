@@ -7,7 +7,9 @@ import {
   toDateTimeLocalValue,
 } from '../helpers/datetime';
 import Pagination from './Pagination';
+import EntityImage from './ui/EntityImage';
 import { EmptyState, ErrorState, LoadingState } from './ui/States';
+import Icon from './ui/Icon';
 
 /**
  * Fixtures, results and goals. Admin and Coach see the same board; passing
@@ -425,7 +427,8 @@ export default function MatchManager({ scopeTeamId = null }) {
         </div>
 
         <button type="submit" className="btn-primary" disabled={scheduling}>
-          {scheduling ? 'Scheduling...' : 'Schedule match'}
+          <Icon name="calendar" size={15} />
+          <span>{scheduling ? 'Scheduling...' : 'Schedule match'}</span>
         </button>
       </form>
 
@@ -442,7 +445,10 @@ export default function MatchManager({ scopeTeamId = null }) {
       )}
 
       <div className="filter-row">
-        <label htmlFor="status-filter">Status</label>
+        <label htmlFor="status-filter">
+          <Icon name="filter" size={14} />
+          <span>Status</span>
+        </label>
         <select
           id="status-filter"
           value={statusFilter}
@@ -455,7 +461,10 @@ export default function MatchManager({ scopeTeamId = null }) {
 
         {!isCoach && (
           <>
-            <label htmlFor="match-team-filter">Team</label>
+            <label htmlFor="match-team-filter">
+              <Icon name="teams" size={14} />
+              <span>Team</span>
+            </label>
             <select
               id="match-team-filter"
               value={teamFilter}
@@ -471,11 +480,14 @@ export default function MatchManager({ scopeTeamId = null }) {
           </>
         )}
 
-        <label htmlFor="match-search">Search</label>
+        <label htmlFor="match-search">
+          <Icon name="search" size={14} />
+          <span>Search</span>
+        </label>
         <input
           id="match-search"
           type="search"
-          placeholder="Team name"
+          placeholder="Search team name..."
           value={search}
           onChange={(e) => changeFilter(setSearch, e.target.value)}
         />
@@ -576,58 +588,87 @@ export default function MatchManager({ scopeTeamId = null }) {
                               </select>
                             </td>
                             <td className="actions-col">
+                            <div className="table-actions">
                               <button
                                 type="button"
-                                className="btn-primary btn-small"
+                                className="btn-action btn-action-save"
                                 onClick={() => handleSaveResult(match)}
                                 disabled={isBusy}
                               >
-                                {isBusy ? 'Saving...' : 'Save'}
+                                <Icon name="check" size={14} />
+                                <span>{isBusy ? 'Saving...' : 'Save'}</span>
                               </button>
-                              <button type="button" className="btn-link" onClick={cancelEdit}>
-                                Cancel
+                              <button type="button" className="btn-action btn-action-cancel" onClick={cancelEdit}>
+                                <span>Cancel</span>
                               </button>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{formatMatchDate(match.matchDate)}</td>
-                            <td>{match.homeTeamName}</td>
-                            <td className="num strong">
-                              {match.status === COMPLETED
-                                ? `${match.homeScore} - ${match.awayScore}`
-                                : <span className="muted">v</span>}
-                            </td>
-                            <td>{match.awayTeamName}</td>
-                            <td>
-                              <span
-                                className={
-                                  match.status === COMPLETED
-                                    ? 'pill pill-completed'
-                                    : 'pill pill-scheduled'
-                                }
-                              >
-                                {match.status}
-                              </span>
-                            </td>
-                            <td className="actions-col">
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{formatMatchDate(match.matchDate)}</td>
+                          <td>
+                            <span className="team-cell">
+                              <EntityImage
+                                src={match.homeTeamLogoUrl}
+                                name={match.homeTeamName}
+                                variant="logo"
+                                className="entity-image-sm"
+                              />
+                              <span>{match.homeTeamName}</span>
+                            </span>
+                          </td>
+                          <td className="num strong">
+                            {match.status === COMPLETED
+                              ? `${match.homeScore} - ${match.awayScore}`
+                              : <span className="muted">v</span>}
+                          </td>
+                          <td>
+                            <span className="team-cell">
+                              <EntityImage
+                                src={match.awayTeamLogoUrl}
+                                name={match.awayTeamName}
+                                variant="logo"
+                                className="entity-image-sm"
+                              />
+                              <span>{match.awayTeamName}</span>
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                match.status === COMPLETED
+                                  ? 'pill pill-completed'
+                                  : 'pill pill-scheduled'
+                              }
+                            >
+                              {match.status}
+                            </span>
+                          </td>
+                          <td className="actions-col">
+                            <div className="table-actions">
                               <button
                                 type="button"
-                                className="btn-link"
+                                className="btn-action btn-action-edit"
                                 onClick={() => startEdit(match)}
+                                title={match.status === COMPLETED ? 'Edit result' : 'Enter result'}
                               >
-                                {match.status === COMPLETED ? 'Edit result' : 'Enter result'}
+                                <Icon name="edit" size={14} />
+                                <span>{match.status === COMPLETED ? 'Edit' : 'Score'}</span>
                               </button>
                               <button
                                 type="button"
-                                className="btn-link"
+                                className={`btn-action btn-action-goals ${goalsOpen ? 'is-active' : ''}`}
                                 onClick={() => toggleGoals(match)}
+                                title={goalsOpen ? 'Hide match goals' : 'View or record match goals'}
                               >
-                                {goalsOpen ? 'Hide goals' : 'Goals'}
+                                <Icon name="ball" size={14} />
+                                <span>{goalsOpen ? 'Hide' : 'Goals'}</span>
                               </button>
-                            </td>
-                          </>
-                        )}
+                            </div>
+                          </td>
+                        </>
+                      )}
                       </tr>
 
                       {rowError?.matchId === match.matchId && (
@@ -701,6 +742,12 @@ function GoalsPanel({ match, panel, form, onFormChange, onSubmit, submitting, er
           {panel.goals.map((goal) => (
             <li key={goal.goalId}>
               <span className="goal-minute">{goal.minute != null ? `${goal.minute}'` : '-'}</span>
+              <EntityImage
+                src={goal.playerImageUrl}
+                name={goal.playerName}
+                variant="avatar"
+                className="entity-image-xs"
+              />
               <span className="strong">{goal.playerName}</span>
               <span className="muted">{goal.teamName}</span>
             </li>
@@ -745,7 +792,8 @@ function GoalsPanel({ match, panel, form, onFormChange, onSubmit, submitting, er
           </div>
 
           <button type="submit" className="btn-primary btn-small" disabled={submitting}>
-            {submitting ? 'Recording...' : 'Record goal'}
+            <Icon name="ball" size={14} />
+            <span>{submitting ? 'Recording...' : 'Record goal'}</span>
           </button>
         </form>
       ) : (

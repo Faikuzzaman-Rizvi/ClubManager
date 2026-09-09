@@ -1,3 +1,4 @@
+using System.Data;
 using ClubManager.Api.Helpers;
 using ClubManager.Api.Models.Entities;
 using Dapper;
@@ -6,12 +7,15 @@ namespace ClubManager.Api.Repositories;
 
 public class PlayerRepository : IPlayerRepository
 {
-    /// <summary>Shared projection so list, detail and lookup all return the same columns.</summary>
-    private const string SelectPlayerWithTeam = """
-        SELECT p.PlayerId, p.UserId, p.TeamId, p.Name, p.Position, p.JerseyNumber, p.Age,
-               t.TeamName
-        FROM dbo.Players p
-        INNER JOIN dbo.Teams t ON t.TeamId = p.TeamId
+    /// <summary>
+    /// The player-with-team projection, owned by dbo.vw_PlayerProfile. Listing the
+    /// columns rather than SELECT * keeps the contract explicit, so adding a column
+    /// to the view cannot quietly change what this returns.
+    /// </summary>
+    private const string SelectPlayerProfile = """
+        SELECT PlayerId, UserId, TeamId, Name, Position, JerseyNumber, Age,
+               ImageUrl, TeamName, TeamLogoUrl
+        FROM dbo.vw_PlayerProfile
         """;
 
     private readonly IDbConnectionFactory _connectionFactory;
@@ -24,9 +28,9 @@ public class PlayerRepository : IPlayerRepository
     public async Task<IReadOnlyList<PlayerWithTeam>> GetAllAsync(int? teamId)
     {
         const string sql = $"""
-            {SelectPlayerWithTeam}
-            WHERE (@TeamId IS NULL OR p.TeamId = @TeamId)
-            ORDER BY t.TeamName, p.JerseyNumber, p.Name;
+            {SelectPlayerProfile}
+            WHERE (@TeamId IS NULL OR TeamId = @TeamId)
+            ORDER BY TeamName, JerseyNumber, Name;
             """;
 
         using var connection = _connectionFactory.CreateConnection();
@@ -37,8 +41,8 @@ public class PlayerRepository : IPlayerRepository
     public async Task<PlayerWithTeam?> GetByIdAsync(int playerId)
     {
         const string sql = $"""
-            {SelectPlayerWithTeam}
-            WHERE p.PlayerId = @PlayerId;
+            {SelectPlayerProfile}
+            WHERE PlayerId = @PlayerId;
             """;
 
         using var connection = _connectionFactory.CreateConnection();
@@ -48,8 +52,8 @@ public class PlayerRepository : IPlayerRepository
     public async Task<PlayerWithTeam?> GetByUserIdAsync(int userId)
     {
         const string sql = $"""
-            {SelectPlayerWithTeam}
-            WHERE p.UserId = @UserId;
+            {SelectPlayerProfile}
+            WHERE UserId = @UserId;
             """;
 
         using var connection = _connectionFactory.CreateConnection();
@@ -58,63 +62,66 @@ public class PlayerRepository : IPlayerRepository
 
     public async Task<int> CreateAsync(Player player)
     {
-        const string sql = """
-            INSERT INTO dbo.Players (UserId, TeamId, Name, Position, JerseyNumber, Age)
-            VALUES (@UserId, @TeamId, @Name, @Position, @JerseyNumber, @Age);
-
-            SELECT CAST(SCOPE_IDENTITY() AS INT);
-            """;
-
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(sql, new
-        {
-            player.UserId,
-            player.TeamId,
-            player.Name,
-            player.Position,
-            player.JerseyNumber,
-            player.Age
-        });
+
+        return await connection.ExecuteScalarAsync<int>(
+            "dbo.Player_Create",
+            new
+            {
+                player.UserId,
+                player.TeamId,
+                player.Name,
+                player.Position,
+                player.JerseyNumber,
+                player.Age
+            },
+            commandType: CommandType.StoredProcedure);
     }
 
     public async Task<bool> UpdateAsync(Player player)
     {
-        const string sql = """
-            UPDATE dbo.Players
-            SET UserId       = @UserId,
-                TeamId       = @TeamId,
-                Name         = @Name,
-                Position     = @Position,
-                JerseyNumber = @JerseyNumber,
-                Age          = @Age
-            WHERE PlayerId = @PlayerId;
-            """;
-
         using var connection = _connectionFactory.CreateConnection();
-        var rows = await connection.ExecuteAsync(sql, new
-        {
-            player.PlayerId,
-            player.UserId,
-            player.TeamId,
-            player.Name,
-            player.Position,
-            player.JerseyNumber,
-            player.Age
-        });
+
+        var rows = await connection.ExecuteScalarAsync<int>(
+            "dbo.Player_Update",
+            new
+            {
+                player.PlayerId,
+                player.UserId,
+                player.TeamId,
+                player.Name,
+                player.Position,
+                player.JerseyNumber,
+                player.Age
+            },
+            commandType: CommandType.StoredProcedure);
 
         return rows > 0;
     }
 
-    public async Task<bool> DeleteAsync(int playerId)
+    public async Task<PlayerDeleteResult> DeleteAsync(int playerId)
     {
-        const string sql = "DELETE FROM dbo.Players WHERE PlayerId = @PlayerId;";
-
         using var connection = _connectionFactory.CreateConnection();
-        var rows = await connection.ExecuteAsync(sql, new { PlayerId = playerId });
 
-        return rows > 0;
+        return await connection.QuerySingleAsync<PlayerDeleteResult>(
+            "dbo.Player_Delete",
+            new { PlayerId = playerId },
+            commandType: CommandType.StoredProcedure);
     }
 
+    public async Task<ImageChangeResult> SetImageAsync(int playerId, string? imageUrl)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QuerySingleAsync<ImageChangeResult>(
+            "dbo.Player_SetImage",
+            new { PlayerId = playerId, ImageUrl = imageUrl },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    /*  Stays as inline SQL. dbo.Player_AssertWritable enforces the same rule
+        inside the write procedures; this exists so the service can refuse a clash
+        with a message naming the number, before anything is attempted.  */
     public async Task<bool> JerseyNumberTakenAsync(int teamId, int jerseyNumber, int? excludePlayerId)
     {
         const string sql = """
@@ -134,13 +141,5 @@ public class PlayerRepository : IPlayerRepository
         });
 
         return count > 0;
-    }
-
-    public async Task<int> GetGoalCountAsync(int playerId)
-    {
-        const string sql = "SELECT COUNT(1) FROM dbo.Goals WHERE PlayerId = @PlayerId;";
-
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(sql, new { PlayerId = playerId });
     }
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
+import EntityImage from '../ui/EntityImage';
 import { formatMatchDay } from '../../helpers/datetime';
 
 const MAX_CARDS = 4;
@@ -38,6 +39,7 @@ export default function LatestMatches({ matches, loading, failed, canRead }) {
           {played.map((match) => {
             const homeWin = match.homeScore > match.awayScore;
             const awayWin = match.awayScore > match.homeScore;
+            const isDraw = match.homeScore === match.awayScore;
 
             return (
               <article className="ld-match-card" key={match.matchId} data-reveal-card>
@@ -46,18 +48,44 @@ export default function LatestMatches({ matches, loading, failed, canRead }) {
                   <span className="ld-tag">Full time</span>
                 </header>
 
-                <div className="ld-match-body">
-                  <span className={`ld-match-team ${homeWin ? 'is-winner' : ''}`}>
-                    {match.homeTeamName}
-                  </span>
-                  <span className="ld-match-score">
-                    {match.homeScore}
-                    <i aria-hidden="true">—</i>
-                    {match.awayScore}
-                  </span>
-                  <span className={`ld-match-team ld-match-team-away ${awayWin ? 'is-winner' : ''}`}>
-                    {match.awayTeamName}
-                  </span>
+                <div className="ld-match-teams">
+                  <div
+                    className={`ld-match-team-row ${
+                      homeWin ? 'is-winner' : isDraw ? 'is-draw' : ''
+                    }`}
+                  >
+                    <div className="ld-match-team-info">
+                      <EntityImage
+                        src={match.homeTeamLogoUrl}
+                        name={match.homeTeamName}
+                        variant="logo"
+                        className="ld-crest"
+                      />
+                      <span className="ld-match-team-name" title={match.homeTeamName}>
+                        {match.homeTeamName}
+                      </span>
+                    </div>
+                    <span className="ld-match-score-num">{match.homeScore}</span>
+                  </div>
+
+                  <div
+                    className={`ld-match-team-row ${
+                      awayWin ? 'is-winner' : isDraw ? 'is-draw' : ''
+                    }`}
+                  >
+                    <div className="ld-match-team-info">
+                      <EntityImage
+                        src={match.awayTeamLogoUrl}
+                        name={match.awayTeamName}
+                        variant="logo"
+                        className="ld-crest"
+                      />
+                      <span className="ld-match-team-name" title={match.awayTeamName}>
+                        {match.awayTeamName}
+                      </span>
+                    </div>
+                    <span className="ld-match-score-num">{match.awayScore}</span>
+                  </div>
                 </div>
               </article>
             );

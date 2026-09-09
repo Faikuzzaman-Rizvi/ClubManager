@@ -3,7 +3,9 @@ import axiosClient from '../../api/axiosClient';
 import { apiErrorMessage } from '../../api/apiError';
 import Pagination from '../../components/Pagination';
 import PageHeader from '../../components/ui/PageHeader';
+import EntityImage from '../../components/ui/EntityImage';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import Icon from '../../components/ui/Icon';
 
 const PAGE_SIZE = 10;
 const EMPTY_FORM = { username: '', password: '', role: 'Coach', teamId: '' };
@@ -177,7 +179,8 @@ export default function UsersPage() {
         </div>
 
         <button type="submit" className="btn-primary" disabled={creating}>
-          {creating ? 'Creating...' : 'Create account'}
+          <Icon name="plus" size={15} />
+          <span>{creating ? 'Creating...' : 'Create account'}</span>
         </button>
       </form>
 
@@ -199,7 +202,10 @@ export default function UsersPage() {
       </p>
 
       <div className="filter-row">
-        <label htmlFor="role-filter">Role</label>
+        <label htmlFor="role-filter">
+          <Icon name="filter" size={14} />
+          <span>Role</span>
+        </label>
         <select
           id="role-filter"
           value={roleFilter}
@@ -211,11 +217,14 @@ export default function UsersPage() {
           <option value="Player">Player</option>
         </select>
 
-        <label htmlFor="user-search">Search</label>
+        <label htmlFor="user-search">
+          <Icon name="search" size={14} />
+          <span>Search</span>
+        </label>
         <input
           id="user-search"
           type="search"
-          placeholder="Username"
+          placeholder="Filter by username..."
           value={search}
           onChange={(e) => changeFilter(setSearch, e.target.value)}
         />
@@ -247,7 +256,17 @@ export default function UsersPage() {
               <tbody>
                 {visible.map((user) => (
                   <tr key={user.userId}>
-                    <td className="table-id">{user.username}</td>
+                    <td className="table-id">
+                      <span className="team-cell">
+                        <EntityImage
+                          src={user.avatarUrl}
+                          name={user.username}
+                          variant="avatar"
+                          className="entity-image-sm"
+                        />
+                        <span>{user.username}</span>
+                      </span>
+                    </td>
                     <td>
                       <span className={`badge badge-${user.role.toLowerCase()}`}>{user.role}</span>
                     </td>

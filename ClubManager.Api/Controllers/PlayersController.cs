@@ -15,10 +15,12 @@ namespace ClubManager.Api.Controllers;
 public class PlayersController : ApiControllerBase
 {
     private readonly IPlayerService _playerService;
+    private readonly IImageService _imageService;
 
-    public PlayersController(IPlayerService playerService)
+    public PlayersController(IPlayerService playerService, IImageService imageService)
     {
         _playerService = playerService;
+        _imageService = imageService;
     }
 
     /// <summary>
@@ -114,6 +116,42 @@ public class PlayersController : ApiControllerBase
 
         return result.Succeeded
             ? NoContent()
+            : ToErrorResult(result);
+    }
+    /// <summary>
+    /// Uploads or replaces the player's photo. JPG, PNG or WebP; re-encoded to
+    /// WebP on the server. A Coach may only photograph their own team's players.
+    /// </summary>
+    [HttpPost("{id:int}/image")]
+    [Authorize(Roles = Roles.AdminOrCoach)]
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ImageUploadResponse>> SetImage(
+        int id, IFormFile file, CancellationToken cancellationToken)
+    {
+        var result = await _imageService.SetPlayerImageAsync(
+            id, file, User.ToCallerContext(), cancellationToken);
+
+        return result.Succeeded
+            ? Ok(result.Value)
+            : ToErrorResult(result);
+    }
+
+    /// <summary>Removes the player's photo and deletes the stored file.</summary>
+    [HttpDelete("{id:int}/image")]
+    [Authorize(Roles = Roles.AdminOrCoach)]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ImageUploadResponse>> RemoveImage(int id)
+    {
+        var result = await _imageService.RemovePlayerImageAsync(id, User.ToCallerContext());
+
+        return result.Succeeded
+            ? Ok(result.Value)
             : ToErrorResult(result);
     }
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
+import EntityImage from '../ui/EntityImage';
 
 const MAX_ROWS = 5;
 
@@ -30,6 +31,13 @@ export default function TopScorersPreview({ topScorers, loading, failed }) {
           {leaders.map((scorer, index) => (
             <li className="ld-scorer" key={scorer.playerId} data-reveal-card>
               <span className="ld-scorer-rank">{String(index + 1).padStart(2, '0')}</span>
+
+              <EntityImage
+                src={scorer.playerImageUrl}
+                name={scorer.playerName}
+                variant="avatar"
+                className="ld-scorer-face"
+              />
 
               <span className="ld-scorer-id">
                 <span className="ld-scorer-name">{scorer.playerName}</span>

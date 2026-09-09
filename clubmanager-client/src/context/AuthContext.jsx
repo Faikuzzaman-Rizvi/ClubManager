@@ -28,6 +28,21 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  /*
+   * Keeps the signed-in user in step after they change their own avatar, so the
+   * TopBar updates without a reload. Stored as well as held in state, or a
+   * refresh would show the old picture again.
+   */
+  const updateAvatar = useCallback((avatarUrl, hasOwnAvatar) => {
+    setUser((current) => {
+      if (!current) return current;
+
+      const next = { ...current, avatarUrl, hasOwnAvatar };
+      localStorage.setItem(USER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -43,8 +58,9 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       login,
       logout,
+      updateAvatar,
     }),
-    [token, user, login, logout],
+    [token, user, login, logout, updateAvatar],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

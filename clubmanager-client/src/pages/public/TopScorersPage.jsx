@@ -1,8 +1,16 @@
 import useFetch from '../../api/useFetch';
+import EntityImage from '../../components/ui/EntityImage';
 import PageHeader from '../../components/ui/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 
 const PODIUM = 3;
+
+function podiumClass(index) {
+  if (index === 0) return 'pos-leader pos-gold';
+  if (index === 1) return 'pos-silver';
+  if (index === 2) return 'pos-bronze';
+  return '';
+}
 
 export default function TopScorersPage() {
   const { data: scorers, error, loading } = useFetch('/api/stats/topscorers');
@@ -50,12 +58,32 @@ export default function TopScorersPage() {
               </thead>
               <tbody>
                 {scorers.map((row, index) => (
-                  <tr key={row.playerId} className={index === 0 ? 'pos-leader' : ''}>
+                  <tr key={row.playerId} className={podiumClass(index)}>
                     <td className="pos-cell">
                       <span className="pos-num">{index + 1}</span>
                     </td>
-                    <td className="table-id">{row.playerName}</td>
-                    <td>{row.teamName}</td>
+                    <td className="table-id">
+                      <span className="team-cell">
+                        <EntityImage
+                          src={row.playerImageUrl}
+                          name={row.playerName}
+                          variant="avatar"
+                          className="entity-image-sm"
+                        />
+                        <span>{row.playerName}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <span className="team-cell">
+                        <EntityImage
+                          src={row.teamLogoUrl}
+                          name={row.teamName}
+                          variant="logo"
+                          className="entity-image-xs"
+                        />
+                        <span>{row.teamName}</span>
+                      </span>
+                    </td>
                     <td className="num strong">
                       {row.goals}
                       {index < PODIUM && (

@@ -3,10 +3,9 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute from './routes/ProtectedRoute';
 
-// Landing-only: keeps GSAP, three.js and the landing styles out of the app.
+// Public entry pages: keep Three.js, GSAP and visual showcase styles code-split.
 const LandingPage = lazy(() => import('./pages/LandingPage'));
-
-import LoginPage from './pages/LoginPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 import NotFoundPage from './pages/NotFoundPage';
 import StandingsPage from './pages/public/StandingsPage';
 import TopScorersPage from './pages/public/TopScorersPage';
@@ -84,13 +83,8 @@ export default function App() {
     </Suspense>
   );
 
-  // The login screen is full-bleed with no chrome around it.
-  if (pathname === '/login') {
-    return <div className="auth-screen">{routes}</div>;
-  }
-
-  // The landing page brings its own chrome, so it skips the app shell too.
-  if (pathname === '/') {
+  // The login screen and landing page bring their own chrome and layouts.
+  if (pathname === '/login' || pathname === '/') {
     return routes;
   }
 

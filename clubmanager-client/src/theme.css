@@ -11,41 +11,44 @@
 
 :root {
   /* -------------------------------------------------- ground & surfaces */
-  --bg: #0a100d;            /* app background            */
-  --bg-deep: #070c0a;       /* sidebar, hero, footers    */
-  --surface: #111917;       /* cards, panels             */
-  --surface-2: #16211d;     /* raised rows, inputs       */
-  --surface-3: #1c2924;     /* hover / selected          */
+  --bg: #090f0c;            /* app background            */
+  --bg-deep: #060a08;       /* sidebar, hero, footers    */
+  --surface: #111a16;       /* cards, panels             */
+  --surface-2: #16241e;     /* raised rows, inputs       */
+  --surface-3: #1d3028;     /* hover / selected          */
+  --surface-glass: rgba(17, 26, 22, 0.85);
 
   /* ---------------------------------------------------------- borders */
   --border: rgba(255, 255, 255, 0.09);
-  --border-soft: rgba(255, 255, 255, 0.055);
-  --border-strong: rgba(255, 255, 255, 0.17);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-accent: rgba(229, 169, 60, 0.35);
 
   /* ------------------------------------------------------------- text */
-  --text: #e9f1ec;
-  --text-muted: #93a79c;
-  --text-faint: #667a70;
-  --text-on-accent: #0a1a11;
+  --text: #edf5f0;
+  --text-muted: #9eb5a8;
+  --text-faint: #789083;
+  --text-on-accent: #07130b;
 
   /* ------------------------------------------------ club accent (amber) */
-  --accent: #d9a441;
-  --accent-hover: #e9b757;
-  --accent-dim: rgba(217, 164, 65, 0.14);
-  --accent-line: rgba(217, 164, 65, 0.4);
+  --accent: #e5a93c;
+  --accent-hover: #f3be53;
+  --accent-dim: rgba(229, 169, 60, 0.14);
+  --accent-line: rgba(229, 169, 60, 0.38);
+  --accent-glow: 0 0 24px rgba(229, 169, 60, 0.22);
 
   /* Secondary brand green, used sparingly for pitch cues. */
-  --pitch: #2f9e6a;
-  --pitch-dim: rgba(47, 158, 106, 0.14);
+  --pitch: #34aa73;
+  --pitch-dim: rgba(52, 170, 115, 0.14);
 
   /* --------------------------------------------------------- semantic */
-  --success: #46b781;
-  --success-bg: rgba(70, 183, 129, 0.13);
-  --warning: #d9a441;
-  --warning-bg: rgba(217, 164, 65, 0.13);
-  --danger: #e0685f;
-  --danger-bg: rgba(224, 104, 95, 0.13);
-  --danger-border: rgba(224, 104, 95, 0.4);
+  --success: #4ec98f;
+  --success-bg: rgba(78, 201, 143, 0.13);
+  --warning: #e5a93c;
+  --warning-bg: rgba(229, 169, 60, 0.13);
+  --danger: #e66b62;
+  --danger-bg: rgba(230, 107, 98, 0.13);
+  --danger-border: rgba(230, 107, 98, 0.4);
 
   /* ------------------------------------------------------- typography */
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
@@ -70,20 +73,21 @@
   --space-7: 3rem;
 
   /* ------------------------------------------------- shape and depth */
-  /* Restrained radii - panels read as precise, not cartoonish. */
   --radius-sm: 4px;
   --radius: 8px;
   --radius-lg: 12px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
-  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --transition: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ----------------------------------------------------------- layout */
-  --sidebar-w: 244px;
-  --topbar-h: 62px;
-  --content-max: 1220px;
+  --sidebar-w: 260px;
+  --topbar-h: 64px;
+  --content-max: 1560px;
 
   /* Legacy aliases: kept so older rules keep resolving while the system
      converges on the semantic names above. */

@@ -1,19 +1,15 @@
 /* =====================================================================
-   ClubManager - Database schema (SQL Server)
-   Phase 0 - run this first, then 02_seed_admin.sql
-   Safe to re-run: every object is created only if missing.
+   001 - Initial schema: the five base tables with their keys, foreign
+   keys, check constraints and the indexes those relationships need.
+
+   Every object is guarded, so this migration is also the safe way to adopt
+   migration tracking on a database that already has these tables: it runs,
+   changes nothing, and gets recorded as applied.
+
+   The publisher owns the database itself (it creates it if missing) and the
+   session options, so there is no CREATE DATABASE, no USE, and no SET
+   QUOTED_IDENTIFIER here. See database/README.md.
    ===================================================================== */
-
-IF DB_ID('ClubManagerDb') IS NULL
-    CREATE DATABASE ClubManagerDb;
-GO
-
-USE ClubManagerDb;
-GO
-
-/* Required for the filtered unique index below; sqlcmd leaves this OFF by default. */
-SET QUOTED_IDENTIFIER ON;
-GO
 
 /* ---------------------------------------------------------------- Teams */
 IF OBJECT_ID('dbo.Teams', 'U') IS NULL
@@ -37,10 +33,10 @@ BEGIN
         Role         NVARCHAR(20)      NOT NULL,
         TeamId       INT               NULL,   -- only meaningful for Role = 'Coach'
         CreatedAt    DATETIME          NOT NULL CONSTRAINT DF_Users_CreatedAt DEFAULT (GETDATE()),
-        CONSTRAINT PK_Users        PRIMARY KEY (UserId),
+        CONSTRAINT PK_Users          PRIMARY KEY (UserId),
         CONSTRAINT UQ_Users_Username UNIQUE (Username),
-        CONSTRAINT CK_Users_Role   CHECK (Role IN ('Admin','Coach','Player')),
-        CONSTRAINT FK_Users_Teams  FOREIGN KEY (TeamId) REFERENCES dbo.Teams(TeamId)
+        CONSTRAINT CK_Users_Role     CHECK (Role IN ('Admin','Coach','Player')),
+        CONSTRAINT FK_Users_Teams    FOREIGN KEY (TeamId) REFERENCES dbo.Teams(TeamId)
     );
 
     CREATE INDEX IX_Users_TeamId ON dbo.Users(TeamId);
@@ -58,9 +54,9 @@ BEGIN
         Position     NVARCHAR(30)      NULL,
         JerseyNumber INT               NULL,
         Age          INT               NULL,
-        CONSTRAINT PK_Players         PRIMARY KEY (PlayerId),
-        CONSTRAINT FK_Players_Users   FOREIGN KEY (UserId) REFERENCES dbo.Users(UserId),
-        CONSTRAINT FK_Players_Teams   FOREIGN KEY (TeamId) REFERENCES dbo.Teams(TeamId)
+        CONSTRAINT PK_Players       PRIMARY KEY (PlayerId),
+        CONSTRAINT FK_Players_Users FOREIGN KEY (UserId) REFERENCES dbo.Users(UserId),
+        CONSTRAINT FK_Players_Teams FOREIGN KEY (TeamId) REFERENCES dbo.Teams(TeamId)
     );
 
     CREATE INDEX IX_Players_TeamId ON dbo.Players(TeamId);
@@ -68,7 +64,9 @@ BEGIN
     /*  At most one player per login account. This has to be a FILTERED unique
         index rather than a UNIQUE constraint: SQL Server treats NULLs as equal
         for uniqueness, so a plain UNIQUE(UserId) would allow only ONE
-        login-less player in the whole table.  */
+        login-less player in the whole table.
+
+        Migration 002 repairs databases created before this was understood.  */
     CREATE UNIQUE INDEX UX_Players_UserId
         ON dbo.Players(UserId)
         WHERE UserId IS NOT NULL;
@@ -113,7 +111,4 @@ BEGIN
     CREATE INDEX IX_Goals_MatchId  ON dbo.Goals(MatchId);
     CREATE INDEX IX_Goals_PlayerId ON dbo.Goals(PlayerId);
 END
-GO
-
-PRINT 'ClubManagerDb schema is up to date.';
 GO

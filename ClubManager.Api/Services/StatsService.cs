@@ -32,6 +32,7 @@ public class StatsService : IStatsService
     {
         TeamId = row.TeamId,
         TeamName = row.TeamName,
+        LogoUrl = row.LogoUrl,
         Played = row.Played,
         Won = row.Won,
         Drawn = row.Drawn,
@@ -46,8 +47,10 @@ public class StatsService : IStatsService
     {
         PlayerId = row.PlayerId,
         PlayerName = row.PlayerName,
+        PlayerImageUrl = row.PlayerImageUrl,
         TeamId = row.TeamId,
         TeamName = row.TeamName,
+        TeamLogoUrl = row.TeamLogoUrl,
         Goals = row.Goals
     };
 }

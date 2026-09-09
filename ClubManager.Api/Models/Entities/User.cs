@@ -13,4 +13,11 @@ public class User
     public int? TeamId { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Site-relative path to an avatar uploaded against this account, or null.
+    /// A Player account usually leaves this unset and shows their player photo
+    /// instead - see <see cref="Repositories.UserWithAvatar.EffectiveAvatarUrl"/>.
+    /// </summary>
+    public string? AvatarUrl { get; set; }
 }

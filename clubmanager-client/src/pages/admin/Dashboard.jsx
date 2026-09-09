@@ -6,6 +6,7 @@ import MatchList from '../../components/dashboard/MatchList';
 import StandingsWidget from '../../components/dashboard/StandingsWidget';
 import TopScorersWidget from '../../components/dashboard/TopScorersWidget';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import Icon from '../../components/ui/Icon';
 import useDashboardData, { greetingFor, splitMatches } from '../../api/useDashboardData';
 import { useAuth } from '../../context/useAuth';
 
@@ -23,45 +24,84 @@ export default function AdminDashboard() {
   return (
     <>
       <section className="dash-hero">
-        <div>
+        <div className="dash-hero-info">
           <h1 className="dash-greeting">
-            {greeting}, {user?.username}
+            {greeting}, <span className="dash-username">{user?.username}</span>
           </h1>
-          <p className="muted">
-            Manage your club, teams, players and matches from one place.
+          <p className="dash-lead">
+            Manage your club, teams, players and matches from one central tactical control panel.
           </p>
           <div className="dash-context">
-            <span className="badge badge-admin">Admin</span>
-            <span className="muted">Full access across every team</span>
+            <span className="badge badge-admin">Administrator</span>
+            <span className="dash-live-badge">
+              <span className="dash-live-dot" />
+              <span>Full Access · Season 2026</span>
+            </span>
           </div>
         </div>
 
         <div className="quick-actions">
-          <Link to="/admin/teams" className="btn-primary btn-small">Add team</Link>
-          <Link to="/admin/players" className="btn-secondary btn-small">Add player</Link>
-          <Link to="/admin/matches" className="btn-secondary btn-small">Schedule match</Link>
-          <Link to="/admin/users" className="btn-secondary btn-small">Create user</Link>
+          <Link to="/admin/teams" className="btn-primary btn-small">
+            <Icon name="plus" size={13} />
+            <span>Add team</span>
+          </Link>
+          <Link to="/admin/players" className="btn-secondary btn-small">
+            <Icon name="player" size={13} />
+            <span>Add player</span>
+          </Link>
+          <Link to="/admin/matches" className="btn-secondary btn-small">
+            <Icon name="matches" size={13} />
+            <span>Schedule match</span>
+          </Link>
+          <Link to="/admin/users" className="btn-secondary btn-small">
+            <Icon name="users" size={13} />
+            <span>Create user</span>
+          </Link>
         </div>
       </section>
 
       <div className="stat-grid">
-        <StatCard label="Teams" value={data.teams.length} icon="⬢" loading={data.loading} />
-        <StatCard label="Players" value={data.players.length} icon="⚉" loading={data.loading} />
+        <StatCard
+          label="Teams"
+          value={data.teams.length}
+          icon="teams"
+          variant="teams"
+          foot="Active league clubs"
+          loading={data.loading}
+        />
+        <StatCard
+          label="Players"
+          value={data.players.length}
+          icon="player"
+          variant="players"
+          foot="Registered squad members"
+          loading={data.loading}
+        />
         <StatCard
           label="Matches played"
           value={played.length}
-          icon="⚔"
-          foot={`${data.matches.length} scheduled in total`}
+          icon="matches"
+          variant="matches"
+          foot={`${data.matches.length} fixtures in season`}
           loading={data.loading}
         />
         <StatCard
           label="Upcoming"
           value={upcoming.length}
-          icon="◷"
-          foot={upcoming[0] ? `Next: ${upcoming[0].homeTeamName} v ${upcoming[0].awayTeamName}` : 'Nothing scheduled'}
+          icon="clock"
+          variant="upcoming"
+          foot={upcoming[0] ? `Next: ${upcoming[0].homeTeamName} v ${upcoming[0].awayTeamName}` : 'No matches queued'}
           loading={data.loading}
         />
-        <StatCard label="Goals" value={goals} icon="◎" accent loading={data.loading} />
+        <StatCard
+          label="Total Goals"
+          value={goals}
+          icon="topscorers"
+          variant="goals"
+          accent
+          foot="League campaign total"
+          loading={data.loading}
+        />
       </div>
 
       <div className="dash-grid">
@@ -90,7 +130,7 @@ export default function AdminDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>Upcoming fixtures</h2>
-            <Link to="/admin/matches" className="btn-link">Schedule</Link>
+            <Link to="/admin/matches" className="btn-link">Schedule match</Link>
           </div>
 
           {data.loading ? (
@@ -112,6 +152,7 @@ export default function AdminDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>League standings</h2>
+            <Link to="/standings" className="btn-link">View full standings</Link>
           </div>
 
           {data.loading ? (
@@ -128,6 +169,7 @@ export default function AdminDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>Top scorers</h2>
+            <Link to="/topscorers" className="btn-link">View all top scorers</Link>
           </div>
 
           {data.loading ? (

@@ -9,6 +9,9 @@ public class StandingRowDto
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
 
+    /// <summary>Site-relative path to the club crest. Null when none is set.</summary>
+    public string? LogoUrl { get; set; }
+
     public int Played { get; set; }
     public int Won { get; set; }
     public int Drawn { get; set; }

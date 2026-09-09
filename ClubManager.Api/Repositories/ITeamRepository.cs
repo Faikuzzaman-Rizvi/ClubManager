@@ -17,22 +17,37 @@ public interface ITeamRepository
     /// <summary>Returns false when no row matched the given TeamId.</summary>
     Task<bool> UpdateAsync(Team team);
 
-    /// <summary>Returns false when no row matched the given TeamId.</summary>
-    Task<bool> DeleteAsync(int teamId);
+    /// <summary>
+    /// Points the team at a new crest, or clears it when <paramref name="logoUrl"/>
+    /// is null. Returns the URL it replaced, so the caller can delete that file.
+    /// </summary>
+    Task<ImageChangeResult> SetLogoAsync(int teamId, string? logoUrl);
 
     /// <summary>
-    /// Counts the rows that reference this team. Checked before a delete so a
-    /// blocked delete reports what is in the way instead of surfacing an FK error.
+    /// Deletes the team if nothing points at it. The check and the delete happen
+    /// together inside dbo.Team_Delete, so the caller gets one answer that cannot
+    /// be stale - and, when the delete is refused, the counts to explain why.
     /// </summary>
-    Task<TeamReferenceCounts> GetReferenceCountsAsync(int teamId);
+    Task<TeamDeleteResult> DeleteAsync(int teamId);
 }
 
-/// <summary>Rows pointing at a team, across the tables that carry an FK to Teams.</summary>
-public class TeamReferenceCounts
+public enum TeamDeleteOutcome
 {
+    NotFound = 0,
+    Deleted = 1,
+
+    /// <summary>Rows in other tables still reference the team; see the counts.</summary>
+    Blocked = 2
+}
+
+/// <summary>
+/// What dbo.Team_Delete did, plus the rows pointing at the team across the tables
+/// that carry an FK to Teams. The counts are only meaningful when Blocked.
+/// </summary>
+public class TeamDeleteResult
+{
+    public TeamDeleteOutcome Outcome { get; set; }
     public int PlayerCount { get; set; }
     public int UserCount { get; set; }
     public int MatchCount { get; set; }
-
-    public bool HasAny => PlayerCount > 0 || UserCount > 0 || MatchCount > 0;
 }

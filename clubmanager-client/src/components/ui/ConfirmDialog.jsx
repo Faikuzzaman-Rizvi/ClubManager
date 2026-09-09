@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import Icon from './Icon';
 
 /**
  * Confirmation for destructive actions, replacing window.confirm.
@@ -49,7 +50,12 @@ export default function ConfirmDialog({
       }}
     >
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-        <h2 id="confirm-title">{title}</h2>
+        <div className="modal-head">
+          <span className="modal-icon modal-icon-danger" aria-hidden="true">
+            <Icon name="alert" size={20} />
+          </span>
+          <h2 id="confirm-title">{title}</h2>
+        </div>
         <p className="modal-body">{message}</p>
 
         <div className="modal-actions">

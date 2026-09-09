@@ -283,8 +283,10 @@ public class MatchService : IMatchService
             MatchId = match.MatchId,
             HomeTeamId = match.HomeTeamId,
             HomeTeamName = match.HomeTeamName,
+            HomeTeamLogoUrl = match.HomeTeamLogoUrl,
             AwayTeamId = match.AwayTeamId,
             AwayTeamName = match.AwayTeamName,
+            AwayTeamLogoUrl = match.AwayTeamLogoUrl,
             MatchDate = match.MatchDate,
             HomeScore = match.HomeScore,
             AwayScore = match.AwayScore,
@@ -304,8 +306,10 @@ public class MatchService : IMatchService
         MatchId = match.MatchId,
         HomeTeamId = match.HomeTeamId,
         HomeTeamName = match.HomeTeamName,
+        HomeTeamLogoUrl = match.HomeTeamLogoUrl,
         AwayTeamId = match.AwayTeamId,
         AwayTeamName = match.AwayTeamName,
+        AwayTeamLogoUrl = match.AwayTeamLogoUrl,
         MatchDate = match.MatchDate,
         HomeScore = match.HomeScore,
         AwayScore = match.AwayScore,
@@ -318,8 +322,10 @@ public class MatchService : IMatchService
         MatchId = goal.MatchId,
         PlayerId = goal.PlayerId,
         PlayerName = goal.PlayerName,
+        PlayerImageUrl = goal.PlayerImageUrl,
         TeamId = goal.TeamId,
         TeamName = goal.TeamName,
+        TeamLogoUrl = goal.TeamLogoUrl,
         Minute = goal.Minute
     };
 }

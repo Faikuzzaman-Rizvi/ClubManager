@@ -12,4 +12,10 @@ public class Player
     public string? Position { get; set; }
     public int? JerseyNumber { get; set; }
     public int? Age { get; set; }
+
+    /// <summary>
+    /// Site-relative path to the player photo, or null when none is set. Written
+    /// only by dbo.Player_SetImage - a squad edit never touches it.
+    /// </summary>
+    public string? ImageUrl { get; set; }
 }

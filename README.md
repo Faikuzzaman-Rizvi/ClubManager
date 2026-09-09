@@ -12,11 +12,13 @@ pagination; player self-edit is not implemented (see below).
 ```
 ClubManager.sln
 global.json              # pins the SDK to .NET 8
-database/
-  01_schema.sql          # tables, keys, indexes
-  02_seed_admin.sql      # bootstrap Admin login
-  03_fix_players_userid_unique.sql   # migration, see below
-  04_demo_data.sql       # optional demo data set (destructive, re-runnable)
+database/                # one file per database object - see database/README.md
+  Migrations/            # schema changes, run once each, in order
+  Views/                 # one view per file
+  StoredProcedures/      # one procedure per file, foldered by table
+  Seed/                  # idempotent reference data
+  DemoData/              # optional demo data set (destructive, opt-in)
+ClubManager.Database/    # the publisher: applies everything in database/
 ClubManager.Api/         # Web API
 clubmanager-client/     # React + Vite frontend
 ```
@@ -28,23 +30,36 @@ clubmanager-client/     # React + Vite frontend
 
 ## Database setup
 
-Run the two scripts in order. Both are safe to re-run.
+One command, from a clean clone:
 
 ```bash
-cd database
-sqlcmd -S localhost -E -C -b -i 01_schema.sql
-sqlcmd -S localhost -E -C -b -i 02_seed_admin.sql
+dotnet run --project ClubManager.Database
 ```
 
-Run `03_fix_players_userid_unique.sql` too if your database was created before
-that script existed - it swaps the broken `UNIQUE(UserId)` constraint on `Players`
-for a filtered unique index. A fresh `01_schema.sql` already builds it correctly.
+That creates the database if it is missing, applies any migrations it has not
+seen, refreshes every view and stored procedure, and seeds the Admin account.
+It is safe to run as often as you like, and it is how you pick up someone else's
+database changes after a pull — there is never a `.sql` file to open by hand.
+
+```bash
+# point it somewhere else
+dotnet run --project ClubManager.Database -- --connection "Server=...;Database=...;..."
+
+# also load the demo data set (DESTRUCTIVE - wipes and reseeds every table)
+dotnet run --project ClubManager.Database -- --demo-data
+```
+
+The publisher reads its connection string from `--connection`, then the
+`CLUBMANAGER_CONNECTION` environment variable, then
+`ClubManager.Database/appsettings.json`. Point it at the same database as the
+API. See [database/README.md](database/README.md) for the file layout, how
+migrations are tracked, and how to add a new object.
 
 Ad-hoc `sqlcmd` against `Players` needs the `-I` flag (`SET QUOTED_IDENTIFIER ON`),
-which any table with a filtered index requires for DML. The scripts set it
-themselves, and `SqlClient` enables it by default, so the API is unaffected.
+which any table with a filtered index requires. The publisher and `SqlClient` both
+set it themselves, so neither the publish nor the API is affected.
 
-That creates `ClubManagerDb` and seeds the one Admin account:
+Publishing creates `ClubManagerDb` and seeds the one Admin account:
 
 | Username | Password    |
 |----------|-------------|
@@ -66,6 +81,49 @@ dotnet run
 
 Swagger UI is at <http://localhost:5075/swagger> in Development. Use the
 **Authorize** button and paste the raw token from `/api/auth/login` (no `Bearer` prefix).
+
+## Data access
+
+Dapper, against stored procedures and views. The split:
+
+| Kind of query | Where it lives |
+|---|---|
+| Create, update, delete, any mutation | a stored procedure |
+| Reusable or aggregating read | a view |
+| Single-table lookup by key | inline SQL in the repository |
+
+Nothing outside `Repositories/` contains SQL, and no SQL anywhere is built by
+string concatenation — every value is a named parameter.
+
+**Views** (`database/Views/`, one file each): `vw_PlayerProfile`, `vw_MatchDetails`, `vw_MatchGoals`,
+`vw_Standings`, `vw_TopScorers`. Repositories select named columns from them and
+add their own `WHERE` and `ORDER BY` — a view cannot carry `ORDER BY`, which is why
+the sort stays in the caller. Simple lookups (a team by id, a user by id) stay as
+inline SQL: one table, no join, nothing for a view to reuse.
+
+**Procedures** (`database/StoredProcedures/`, one file each): `User_Create`, `User_GetByUsername`,
+`Team_Create/Update/Delete`, `Player_Create/Update/Delete`, `Match_Create/Update/Delete`,
+`Goal_Create/Delete`, plus `Player_AssertWritable` and `Match_AssertWritable`, which
+hold the rules the create and update paths share so the two cannot drift apart.
+`Match_Delete` and `Goal_Delete` have no endpoint yet — no route deletes a match or
+a goal, and this did not add one.
+
+Three of them fold a check and a write into one transaction, replacing the
+read-then-write round trips the services used to make and closing the window
+between them: `Team_Delete` (counts the players, coaches and fixtures pointing at
+the team), `Player_Delete` (counts goals against the player) and `Match_Delete`
+(removes the fixture's goals with it). Each returns an outcome plus the counts, so
+a refused delete can still say what is in the way.
+
+**Where the rules live.** Authorisation is only ever in the service layer, decided
+from the JWT claims — the database is never asked who is calling. The procedures
+enforce data integrity: jersey numbers unique within a team, one player per login,
+a completed match carrying both scores, a scorer who plays for one of the two
+sides. The services check the same things first so the API returns a friendly
+message, which means a procedure only actually raises on a concurrent write or a
+hand-edited row. When it does, `DatabaseExceptionHandler` turns it into a 409 with
+the procedure's own user-safe message; every other database error becomes a plain
+500 that says nothing about the database.
 
 ## Endpoints
 
@@ -150,8 +208,10 @@ notes for the reasoning):
 | GET    | `/api/stats/standings`    | Public - no token  |
 | GET    | `/api/stats/topscorers`   | Public - no token  |
 
-Both are read-only aggregation: raw SQL in `StatsRepository` does the arithmetic
-and the ordering, and `StatsService` only maps rows onto the response DTOs.
+Both are read-only aggregation, done entirely in the database by `dbo.vw_Standings`
+and `dbo.vw_TopScorers`. `StatsRepository` selects from the view and applies the
+sort; `StatsService` only maps rows onto the response DTOs. Nothing is tallied up
+in memory.
 
 **Standings** count only `Completed` matches with both scores present. Goals for/
 against come from `Matches.HomeScore/AwayScore`, never from the `Goals` table.
@@ -182,14 +242,60 @@ The token carries `nameidentifier` (UserId), `name`, `role`, and — for a Coach
 a `teamId` claim. Later phases must scope Coach actions off that claim rather
 than off a team id in the route or request body.
 
+### Images
+
+| Method | Route                        | Access                       |
+|--------|------------------------------|------------------------------|
+| POST   | `/api/players/{id}/image`    | Admin, Coach (own team only) |
+| DELETE | `/api/players/{id}/image`    | Admin, Coach (own team only) |
+| POST   | `/api/teams/{id}/logo`       | Admin only                   |
+| DELETE | `/api/teams/{id}/logo`       | Admin only                   |
+| POST   | `/api/users/me/avatar`       | Any signed-in role           |
+| DELETE | `/api/users/me/avatar`       | Any signed-in role           |
+
+Uploads are `multipart/form-data` with a single `file` part. All six return
+`{ "imageUrl": "/uploads/…" | null }`.
+
+**Storage.** Only the URL goes in SQL Server — `Players.ImageUrl`,
+`Teams.LogoUrl`, `Users.AvatarUrl`, all nullable. The file is written under the
+API's upload root and served as static content from `/uploads`, so images stay
+out of the database and get cached by the browser. Filenames are a GUID chosen by
+the server; the uploaded name is never used, not even sanitised, which rules out
+path traversal and overwriting someone else's file in one go.
+
+**Validation.** Extension, content type and the leading file signature are all
+checked, then the image is decoded and **re-encoded to WebP** by ImageSharp. That
+is the security boundary as much as the optimisation: whatever arrives has to
+survive being decoded as an image and written back out, so a script or executable
+cannot reach the disk intact. Anything over 5 MB is refused before decoding, and
+absurd pixel dimensions are refused from the header, before any pixel is read.
+Photos are capped at 512px on the long edge, avatars at 256px, and EXIF, IPTC and
+XMP are stripped.
+
+**Replacing** an image deletes the file it replaced, in the same call: the
+`*_SetImage` / `_SetLogo` / `_SetAvatar` procedures capture the outgoing URL with
+`OUTPUT` on the same `UPDATE` that writes the new one, so nothing races and no
+orphan is left behind. Editing a player or renaming a team never touches its
+image — that is why images have their own endpoints and their own procedures.
+
+**In responses.** Image URLs ride along on the rows that already carry the entity:
+players and top scorers carry `imageUrl`/`playerImageUrl`, fixtures carry
+`homeTeamLogoUrl` and `awayTeamLogoUrl`, standings carry `logoUrl`. No screen
+makes a second request per row.
+
+**A Player may set their own account avatar, but not their own player photo** —
+the squad photo stays with the Admin and their Coach, matching who may edit a
+player at all. Clearing an account avatar does not leave a Player faceless:
+`vw_UserProfile` falls back to the linked player's photo, and `hasOwnAvatar` on
+the user tells the UI whether there is anything of the account's own to remove.
+
 ### Demo data (optional)
 
-`04_demo_data.sql` fills every table so each screen has something to show:
+`database/DemoData/DemoData.sql` fills every table so each screen has something to show:
 6 teams, 27 players, 8 matches (5 Completed, 3 Scheduled) and 17 goals.
 
 ```bash
-cd database
-sqlcmd -S localhost -E -C -b -i 04_demo_data.sql
+dotnet run --project ClubManager.Database -- --demo-data
 ```
 
 **It is clear-and-reseed, so it is destructive**: every run deletes all Teams,
@@ -222,10 +328,32 @@ rather than defining a second palette, so the landing page and the app cannot
 drift apart.
 
 Shared building blocks live in `components/ui` (`PageHeader`, `ConfirmDialog`,
-and the `LoadingState` / `EmptyState` / `ErrorState` trio), `components/layout`
-(`AppShell`, `Sidebar`, `TopBar`) and `components/dashboard` (`StatCard`,
-`MatchList`, `StandingsWidget`, `TopScorersWidget`). Destructive actions go
-through `ConfirmDialog` rather than `window.confirm`.
+`EntityImage`, `ImageUpload`, and the `LoadingState` / `EmptyState` / `ErrorState`
+trio), `components/layout` (`AppShell`, `Sidebar`, `TopBar`) and
+`components/dashboard` (`StatCard`, `MatchList`, `StandingsWidget`,
+`TopScorersWidget`). Destructive actions go through `ConfirmDialog` rather than
+`window.confirm`.
+
+**Images.** Two components, used everywhere:
+
+- **`EntityImage`** is the only way an entity picture is rendered. A missing URL,
+  a deleted file and a failed load all end in the same place — initials on a
+  ground tinted by a hash of the name, so a squad of fallbacks reads as distinct
+  people. There is no path that leaves a broken-image icon on screen. Variants
+  are shapes (`avatar` circle, `logo` contained square, `cover`); size comes from
+  a class. Everything is `loading="lazy"` and `decoding="async"`.
+- **`ImageUpload`** manages one image: click or drag, local preview while the
+  request is in flight, progress bar, validation and error messages, replace and
+  remove. It is the same component for a player photo, a club crest and a user
+  avatar — `endpoint` is what differs.
+
+`api/images.js` holds `resolveImageUrl`, which turns the API's site-relative
+`/uploads/…` into an absolute URL. That matters in development: a bare relative
+src would resolve against Vite on :5173 rather than the API on :5075.
+
+Images are created after the entity exists, so an upload control appears on the
+edit row rather than the create form, and it saves on its own the moment a file
+is chosen — cancelling an edit does not undo it.
 
 The public landing page at `/` adds `three` + `@react-three/fiber` + `@react-three/drei`
 (the hero ball) and `gsap` + ScrollTrigger (entrance and scroll animation). Both

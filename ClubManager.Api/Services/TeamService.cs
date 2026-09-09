@@ -60,32 +60,36 @@ public class TeamService : ITeamService
         }
 
         _logger.LogInformation("Updated team {TeamId}.", teamId);
-        return ServiceResult<TeamDto>.Ok(ToDto(team));
+
+        // Read back rather than echoing the request: the crest is not part of an
+        // edit payload, so a DTO built from the request alone would report it as
+        // gone and the client would blank it out.
+        var saved = await _teamRepository.GetByIdAsync(teamId);
+
+        return saved is null
+            ? NotFound(teamId)
+            : ServiceResult<TeamDto>.Ok(ToDto(saved));
     }
 
     public async Task<ServiceResult<bool>> DeleteAsync(int teamId)
     {
-        if (!await _teamRepository.ExistsAsync(teamId))
-        {
-            return ServiceResult<bool>.Fail($"Team {teamId} was not found.", ServiceErrorType.NotFound);
-        }
+        // Teams is the parent of Players, Users (coaches) and Matches. dbo.Team_Delete
+        // checks those references and deletes in one transaction, so what comes back
+        // cannot be stale - and when it refuses, it says what is in the way rather
+        // than letting the FK violation become a 500.
+        var result = await _teamRepository.DeleteAsync(teamId);
 
-        // Teams is the parent of Players, Users (coaches) and Matches. Report what
-        // blocks the delete rather than letting the FK violation become a 500.
-        var references = await _teamRepository.GetReferenceCountsAsync(teamId);
-        if (references.HasAny)
+        switch (result.Outcome)
         {
-            return ServiceResult<bool>.Fail(
-                $"Team {teamId} cannot be deleted while it still has " +
-                $"{references.PlayerCount} player(s), {references.UserCount} user account(s) " +
-                $"and {references.MatchCount} match(es) linked to it.",
-                ServiceErrorType.Conflict);
-        }
+            case TeamDeleteOutcome.NotFound:
+                return ServiceResult<bool>.Fail($"Team {teamId} was not found.", ServiceErrorType.NotFound);
 
-        if (!await _teamRepository.DeleteAsync(teamId))
-        {
-            // Deleted by someone else between the existence check and here.
-            return ServiceResult<bool>.Fail($"Team {teamId} was not found.", ServiceErrorType.NotFound);
+            case TeamDeleteOutcome.Blocked:
+                return ServiceResult<bool>.Fail(
+                    $"Team {teamId} cannot be deleted while it still has " +
+                    $"{result.PlayerCount} player(s), {result.UserCount} user account(s) " +
+                    $"and {result.MatchCount} match(es) linked to it.",
+                    ServiceErrorType.Conflict);
         }
 
         _logger.LogInformation("Deleted team {TeamId}.", teamId);
@@ -103,6 +107,7 @@ public class TeamService : ITeamService
     {
         TeamId = team.TeamId,
         TeamName = team.TeamName,
-        City = team.City
+        City = team.City,
+        LogoUrl = team.LogoUrl
     };
 }

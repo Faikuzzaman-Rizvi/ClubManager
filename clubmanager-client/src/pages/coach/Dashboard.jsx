@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import StatCard from '../../components/dashboard/StatCard';
 import MatchList from '../../components/dashboard/MatchList';
 import StandingsWidget from '../../components/dashboard/StandingsWidget';
+import TopScorersWidget from '../../components/dashboard/TopScorersWidget';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import Icon from '../../components/ui/Icon';
 import useDashboardData, { greetingFor, splitMatches } from '../../api/useDashboardData';
 import { useAuth } from '../../context/useAuth';
 
@@ -59,39 +61,56 @@ export default function CoachDashboard() {
         </div>
 
         <div className="quick-actions">
-          <Link to="/coach/players" className="btn-primary btn-small">Add player</Link>
-          <Link to="/coach/results" className="btn-secondary btn-small">Enter result</Link>
+          <Link to="/coach/players" className="btn-primary btn-small">
+            <Icon name="plus" size={13} />
+            <span>Add player</span>
+          </Link>
+          <Link to="/coach/results" className="btn-secondary btn-small">
+            <Icon name="matches" size={13} />
+            <span>Enter result</span>
+          </Link>
         </div>
       </section>
 
       <div className="stat-grid">
-        <StatCard label="Squad size" value={data.players.length} icon="⚉" loading={data.loading} />
+        <StatCard
+          label="Squad size"
+          value={data.players.length}
+          icon="player"
+          variant="players"
+          foot="First-team roster"
+          loading={data.loading}
+        />
         <StatCard
           label="League position"
           value={position > 0 ? `#${position}` : '—'}
-          icon="▤"
-          foot={standing ? `${standing.points} points` : 'No completed matches'}
+          icon="standings"
+          variant="goals"
+          foot={standing ? `${standing.points} points in table` : 'No completed matches'}
           accent
           loading={data.loading}
         />
         <StatCard
           label="Record"
           value={standing ? `${standing.won}-${standing.drawn}-${standing.lost}` : '—'}
-          icon="◈"
-          foot="Won - drawn - lost"
+          icon="chart"
+          variant="matches"
+          foot="W – D – L tally"
           loading={data.loading}
         />
         <StatCard
           label="Upcoming"
           value={upcoming.length}
-          icon="◷"
+          icon="clock"
+          variant="upcoming"
           foot={upcoming[0] ? `Next: ${upcoming[0].homeTeamName} v ${upcoming[0].awayTeamName}` : 'Nothing scheduled'}
           loading={data.loading}
         />
         <StatCard
           label="Squad goals"
           value={squadGoals.reduce((sum, row) => sum + row.goals, 0)}
-          icon="◎"
+          icon="topscorers"
+          variant="goals"
           foot={squadGoals[0] ? `Top: ${squadGoals[0].playerName}` : 'No goals yet'}
           loading={data.loading}
         />
@@ -123,7 +142,7 @@ export default function CoachDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>Upcoming fixtures</h2>
-            <Link to="/coach/results" className="btn-link">Schedule</Link>
+            <Link to="/coach/results" className="btn-link">Schedule fixture</Link>
           </div>
 
           {data.loading ? (
@@ -143,6 +162,7 @@ export default function CoachDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>League standings</h2>
+            <Link to="/standings" className="btn-link">View full standings</Link>
           </div>
 
           {data.loading ? (
@@ -157,7 +177,7 @@ export default function CoachDashboard() {
         <section className="card">
           <div className="section-title">
             <h2>Squad scorers</h2>
-            <Link to="/coach/players" className="btn-link">My squad</Link>
+            <Link to="/coach/players" className="btn-link">View squad</Link>
           </div>
 
           {data.loading ? (
@@ -169,18 +189,7 @@ export default function CoachDashboard() {
               message="Record goals against a match and your scorers will appear here."
             />
           ) : (
-            <ol className="scorer-list">
-              {squadGoals.slice(0, 5).map((scorer, index) => (
-                <li className={`scorer-row ${index < 3 ? 'is-podium' : ''}`} key={scorer.playerId}>
-                  <span className="scorer-rank">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="scorer-id">
-                    <span className="scorer-name">{scorer.playerName}</span>
-                    <span className="scorer-team">{scorer.teamName}</span>
-                  </span>
-                  <span className="scorer-goals">{scorer.goals}</span>
-                </li>
-              ))}
-            </ol>
+            <TopScorersWidget topScorers={squadGoals} />
           )}
         </section>
       </div>

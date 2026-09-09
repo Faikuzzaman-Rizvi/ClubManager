@@ -2,9 +2,12 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using ClubManager.Api.Helpers;
+using ClubManager.Api.Middleware;
 using ClubManager.Api.Repositories;
 using ClubManager.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -17,6 +20,21 @@ builder.Services.Configure<JwtSettings>(
 var jwtSettings = builder.Configuration
     .GetSection(JwtSettings.SectionName)
     .Get<JwtSettings>() ?? new JwtSettings();
+
+builder.Services.Configure<ImageStorageOptions>(
+    builder.Configuration.GetSection(ImageStorageOptions.SectionName));
+
+var uploadOptions = builder.Configuration
+    .GetSection(ImageStorageOptions.SectionName)
+    .Get<ImageStorageOptions>() ?? new ImageStorageOptions();
+
+// Relative paths are resolved once, here, so nothing downstream depends on the
+// process working directory.
+var uploadRoot = Path.IsPathRooted(uploadOptions.RootPath)
+    ? uploadOptions.RootPath
+    : Path.Combine(builder.Environment.ContentRootPath, uploadOptions.RootPath);
+
+builder.Services.PostConfigure<ImageStorageOptions>(options => options.RootPath = uploadRoot);
 
 // Fail loudly at startup rather than issuing tokens nobody can trust.
 if (string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key.Length < 32)
@@ -33,6 +51,11 @@ var allowedOrigins = builder.Configuration
 // ------------------------------------------------------------------- DI
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
+// Keeps a rule raised by a stored procedure from surfacing as a bare 500, and
+// keeps every other database error from surfacing at all. See the handler.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DatabaseExceptionHandler>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
@@ -45,6 +68,10 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IImageService, ImageService>();
+
+// Stateless and only reads options, so one instance serves every request.
+builder.Services.AddSingleton<IImageStorage, ImageStorage>();
 
 // ---------------------------------------------------------------- auth
 builder.Services
@@ -79,6 +106,16 @@ builder.Services.AddCors(options =>
         .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod());
+});
+
+// ----------------------------------------------------------------- forms
+// The multipart reader has its own ceiling, separate from [RequestSizeLimit],
+// and it is far lower than an image upload needs. Pinned to the same constant
+// so the two cannot drift apart and produce a confusing "body length limit"
+// failure instead of the size message the service would return.
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = UploadLimits.MaxRequestBytes;
 });
 
 // ------------------------------------------------------------------- mvc
@@ -126,6 +163,10 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // --------------------------------------------------------------- pipeline
+// Sits inside the developer exception page, so it still gets first look at a
+// database error in Development.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -137,6 +178,34 @@ else
 }
 
 app.UseCors(CorsPolicy);
+
+/*  Uploaded images, served straight from disk.
+
+    A dedicated FileServer rather than UseStaticFiles() over wwwroot: this maps
+    exactly one folder at exactly one URL prefix, so nothing else that ever lands
+    in the content root becomes reachable by accident.
+
+    ServeUnknownFileTypes stays off (the default), so anything without a known
+    image content type is refused rather than handed over - a second line of
+    defence behind ImageStorage, which only ever writes .webp.
+
+    Long, immutable caching is safe because filenames are content-addressed by
+    GUID: replacing an image mints a new name, so a stale URL is never reused
+    and the browser never has to revalidate. This is what keeps a squad list of
+    thirty faces off the network on every navigation.  */
+Directory.CreateDirectory(uploadRoot);
+
+app.UseFileServer(new FileServerOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadRoot),
+    RequestPath = uploadOptions.RequestPath,
+    EnableDirectoryBrowsing = false,
+    StaticFileOptions =
+    {
+        OnPrepareResponse = context =>
+            context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable"
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

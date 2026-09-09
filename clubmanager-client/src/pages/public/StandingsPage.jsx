@@ -1,4 +1,5 @@
 import useFetch from '../../api/useFetch';
+import EntityImage from '../../components/ui/EntityImage';
 import PageHeader from '../../components/ui/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { useAuth } from '../../context/useAuth';
@@ -9,7 +10,9 @@ import { useAuth } from '../../context/useAuth';
  * once the table is big enough for it to read sensibly.
  */
 function rowAccent(index, total) {
-  if (index === 0 && total > 1) return 'pos-leader';
+  if (index === 0 && total > 1) return 'pos-leader pos-gold';
+  if (index === 1 && total > 2) return 'pos-silver';
+  if (index === 2 && total > 3) return 'pos-bronze';
   if (total >= 4 && index >= total - 2) return 'pos-drop';
   return '';
 }
@@ -82,7 +85,17 @@ export default function StandingsPage() {
                       <td className="pos-cell">
                         <span className="pos-num">{index + 1}</span>
                       </td>
-                      <td className="table-id">{row.teamName}</td>
+                      <td className="table-id">
+                        <span className="team-cell">
+                          <EntityImage
+                            src={row.logoUrl}
+                            name={row.teamName}
+                            variant="logo"
+                            className="entity-image-sm"
+                          />
+                          <span>{row.teamName}</span>
+                        </span>
+                      </td>
                       <td className="num">{row.played}</td>
                       <td className="num">{row.won}</td>
                       <td className="num">{row.drawn}</td>
@@ -103,6 +116,9 @@ export default function StandingsPage() {
               <div className="table-legend">
                 <span className="legend-item">
                   <span className="legend-swatch legend-leader" /> Leader
+                </span>
+                <span className="legend-item">
+                  <span className="legend-swatch legend-podium" /> Podium
                 </span>
                 <span className="legend-item">
                   <span className="legend-swatch legend-drop" /> Drop zone

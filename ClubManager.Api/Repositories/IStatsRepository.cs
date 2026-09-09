@@ -20,6 +20,7 @@ public class TeamStandingRow
 {
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
     public int Played { get; set; }
     public int Won { get; set; }
     public int Drawn { get; set; }
@@ -34,7 +35,9 @@ public class TopScorerRow
 {
     public int PlayerId { get; set; }
     public string PlayerName { get; set; } = string.Empty;
+    public string? PlayerImageUrl { get; set; }
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
+    public string? TeamLogoUrl { get; set; }
     public int Goals { get; set; }
 }

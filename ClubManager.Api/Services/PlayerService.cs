@@ -200,18 +200,19 @@ public class PlayerService : IPlayerService
             }
         }
 
-        // Goals has an FK to Players, so report the blocker instead of surfacing a 500.
-        var goals = await _playerRepository.GetGoalCountAsync(playerId);
-        if (goals > 0)
-        {
-            return ServiceResult<bool>.Fail(
-                $"Player {playerId} cannot be deleted while {goals} goal(s) are recorded against them.",
-                ServiceErrorType.Conflict);
-        }
+        // Goals has an FK to Players. dbo.Player_Delete counts and deletes in one
+        // transaction, so it reports the blocker instead of surfacing a 500.
+        var result = await _playerRepository.DeleteAsync(playerId);
 
-        if (!await _playerRepository.DeleteAsync(playerId))
+        switch (result.Outcome)
         {
-            return ServiceResult<bool>.Fail($"Player {playerId} was not found.", ServiceErrorType.NotFound);
+            case PlayerDeleteOutcome.NotFound:
+                return ServiceResult<bool>.Fail($"Player {playerId} was not found.", ServiceErrorType.NotFound);
+
+            case PlayerDeleteOutcome.Blocked:
+                return ServiceResult<bool>.Fail(
+                    $"Player {playerId} cannot be deleted while {result.GoalCount} goal(s) are recorded against them.",
+                    ServiceErrorType.Conflict);
         }
 
         _logger.LogInformation("Deleted player {PlayerId}.", playerId);
@@ -316,6 +317,8 @@ public class PlayerService : IPlayerService
         Age = player.Age,
         TeamId = player.TeamId,
         TeamName = player.TeamName,
+        TeamLogoUrl = player.TeamLogoUrl,
+        ImageUrl = player.ImageUrl,
         UserId = player.UserId
     };
 
@@ -328,6 +331,8 @@ public class PlayerService : IPlayerService
         Age = player.Age,
         TeamId = player.TeamId,
         TeamName = player.TeamName,
+        TeamLogoUrl = player.TeamLogoUrl,
+        ImageUrl = player.ImageUrl,
         UserId = player.UserId
     };
 }

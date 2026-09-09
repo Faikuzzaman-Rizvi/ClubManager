@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
+import EntityImage from '../ui/EntityImage';
 
 const MAX_ROWS = 5;
 
@@ -45,7 +46,17 @@ export default function StandingsPreview({ standings, loading, failed }) {
               {rows.map((row, index) => (
                 <tr key={row.teamId} className={index === 0 ? 'is-leader' : ''}>
                   <td className="ld-pos">{index + 1}</td>
-                  <td className="ld-team">{row.teamName}</td>
+                  <td className="ld-team">
+                    <span className="ld-team-cell">
+                      <EntityImage
+                        src={row.logoUrl}
+                        name={row.teamName}
+                        variant="logo"
+                        className="ld-crest"
+                      />
+                      <span>{row.teamName}</span>
+                    </span>
+                  </td>
                   <td className="ld-num">{row.played}</td>
                   <td className="ld-num">{row.won}</td>
                   <td className="ld-num">{row.drawn}</td>

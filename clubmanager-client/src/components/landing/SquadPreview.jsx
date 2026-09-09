@@ -1,17 +1,8 @@
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
+import EntityImage from '../ui/EntityImage';
 
 const MAX_CARDS = 8;
-
-/** Initials stand in for a photo - the API carries no avatar field. */
-function initials(name) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join('');
-}
 
 /**
  * A horizontal squad rail. /api/players is Admin-or-Coach, so everyone else
@@ -41,9 +32,12 @@ export default function SquadPreview({ players, loading, failed, canRead }) {
         <ul className="ld-squad-rail">
           {squad.map((player) => (
             <li className="ld-player-card" key={player.playerId} data-reveal-card>
-              <span className="ld-player-avatar" aria-hidden="true">
-                {initials(player.name)}
-              </span>
+              <EntityImage
+                src={player.imageUrl}
+                name={player.name}
+                variant="avatar"
+                className="ld-player-avatar"
+              />
               <span className="ld-player-number">
                 {player.jerseyNumber != null ? String(player.jerseyNumber).padStart(2, '0') : '--'}
               </span>

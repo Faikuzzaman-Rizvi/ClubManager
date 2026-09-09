@@ -20,3 +20,7 @@ dist/
 # Local secrets - never commit a real signing key or connection string
 appsettings.Production.json
 appsettings.*.Local.json
+
+# Uploaded images. User content, not source - the API creates this folder at
+# startup, so there is nothing to keep here.
+ClubManager.Api/wwwroot/uploads/

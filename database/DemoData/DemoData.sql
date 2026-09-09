@@ -15,18 +15,11 @@
      player.saka     Player  -> linked to Bukayo Saka (Arsenal)
      player.pickford Player  -> linked to Jordan Pickford (Everton)
 
-   The bootstrap admin from 02_seed_admin.sql keeps its own password.
+   The bootstrap admin from Seed/001_AdminAccount.sql keeps its own password.
 
-   Run after 01_schema.sql, 02_seed_admin.sql and 03_fix_players_userid_unique.sql:
-     sqlcmd -S localhost -E -C -b -i 04_demo_data.sql
+   NOT part of a normal publish. Run it explicitly:
+     dotnet run --project ClubManager.Database -- --demo-data
    ===================================================================== */
-
-USE ClubManagerDb;
-GO
-
-/* Required for any DML against Players, which carries a filtered index. */
-SET QUOTED_IDENTIFIER ON;
-GO
 
 SET NOCOUNT ON;
 GO

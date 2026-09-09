@@ -1,5 +1,7 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
+import EntityImage from '../ui/EntityImage';
+import Icon from '../ui/Icon';
 
 /* Longest prefix first, so /admin/teams wins over /admin. */
 const TITLES = [
@@ -43,7 +45,7 @@ export default function TopBar({ onToggleNav, navOpen }) {
           aria-controls="app-sidebar"
           aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
         >
-          <span aria-hidden="true">{navOpen ? '✕' : '☰'}</span>
+          <Icon name={navOpen ? 'close' : 'menu'} size={18} />
         </button>
 
         <div className="topbar-titles">
@@ -52,18 +54,31 @@ export default function TopBar({ onToggleNav, navOpen }) {
         </div>
       </div>
 
+      <div className="topbar-center">
+        <div className="topbar-season-badge">
+          <span className="pulse-dot" aria-hidden="true" />
+          <span className="season-txt">CAMPAIGN 2026/27</span>
+          <span className="season-sep">·</span>
+          <span className="season-live">MATCHDAY ACTIVE</span>
+        </div>
+      </div>
+
       <div className="topbar-actions">
         {isAuthenticated ? (
           <>
             <span className="user-chip">
-              <span className="avatar" aria-hidden="true">
-                {(user?.username ?? '??').slice(0, 2).toUpperCase()}
-              </span>
+              <EntityImage
+                src={user?.avatarUrl}
+                name={user?.username}
+                variant="avatar"
+                className="entity-image-sm"
+              />
               <span className="user-name">{user?.username}</span>
               <span className={`badge badge-${(role ?? '').toLowerCase()}`}>{role}</span>
             </span>
-            <button type="button" className="btn-link" onClick={handleLogout}>
-              Log out
+            <button type="button" className="btn-link btn-logout" onClick={handleLogout}>
+              <Icon name="logout" size={15} />
+              <span>Log out</span>
             </button>
           </>
         ) : (

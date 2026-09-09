@@ -59,7 +59,7 @@ public class AuthService : IAuthService
         {
             Token = token,
             ExpiresAtUtc = expiresAtUtc,
-            User = ToDto(user)
+            User = ToDto(user, user.EffectiveAvatarUrl)
         });
     }
 
@@ -118,7 +118,7 @@ public class AuthService : IAuthService
         _logger.LogInformation("Created {Role} account {Username} (UserId {UserId}).",
             user.Role, user.Username, user.UserId);
 
-        return ServiceResult<UserDto>.Ok(ToDto(user));
+        return ServiceResult<UserDto>.Ok(ToDto(user, avatarUrl: null));
     }
 
     private (string Token, DateTime ExpiresAtUtc) CreateToken(User user)
@@ -153,12 +153,19 @@ public class AuthService : IAuthService
         return (new JwtSecurityTokenHandler().WriteToken(token), expiresAtUtc);
     }
 
-    private static UserDto ToDto(User user) => new()
+    /// <summary>
+    /// <paramref name="avatarUrl"/> is the resolved avatar - the account's own, or
+    /// the linked player photo it falls back to. A freshly registered account has
+    /// neither, so the caller passes null.
+    /// </summary>
+    private static UserDto ToDto(User user, string? avatarUrl) => new()
     {
         UserId = user.UserId,
         Username = user.Username,
         Role = user.Role,
-        TeamId = user.TeamId
+        TeamId = user.TeamId,
+        AvatarUrl = avatarUrl,
+        HasOwnAvatar = user.AvatarUrl is not null
     };
 
     private static string HashPassword(string password) =>

@@ -4,7 +4,11 @@ import { apiErrorMessage } from '../../api/apiError';
 import Pagination from '../../components/Pagination';
 import PageHeader from '../../components/ui/PageHeader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import EntityImage from '../../components/ui/EntityImage';
+import ImageUpload from '../../components/ui/ImageUpload';
+import { imageEndpoints } from '../../api/images';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import Icon from '../../components/ui/Icon';
 
 const PAGE_SIZE = 10;
 const EMPTY_FORM = { name: '', position: '', jerseyNumber: '', age: '', teamId: '', userId: '' };
@@ -89,6 +93,17 @@ export default function PlayersPage() {
     return users.filter(
       (u) =>
         u.role === 'Player' && (!linkedUserIds.has(u.userId) || u.userId === currentUserId),
+    );
+  }
+
+  /*
+   * Folds a photo change into the loaded list. The upload is already stored by
+   * the time this runs, so this is a local sync rather than a save - which is
+   * what keeps the table from reloading after every image.
+   */
+  function applyPhoto(playerId, imageUrl) {
+    setPlayers((current) =>
+      current.map((player) => (player.playerId === playerId ? { ...player, imageUrl } : player)),
     );
   }
 
@@ -266,7 +281,8 @@ export default function PlayersPage() {
         </div>
 
         <button type="submit" className="btn-primary" disabled={creating}>
-          {creating ? 'Creating...' : 'Add player'}
+          <Icon name="plus" size={15} />
+          <span>{creating ? 'Creating...' : 'Add player'}</span>
         </button>
       </form>
 
@@ -277,7 +293,10 @@ export default function PlayersPage() {
       )}
 
       <div className="filter-row">
-        <label htmlFor="team-filter">Show</label>
+        <label htmlFor="team-filter">
+          <Icon name="filter" size={14} />
+          <span>Team</span>
+        </label>
         <select
           id="team-filter"
           value={teamFilter}
@@ -294,11 +313,14 @@ export default function PlayersPage() {
           ))}
         </select>
 
-        <label htmlFor="player-search">Search</label>
+        <label htmlFor="player-search">
+          <Icon name="search" size={14} />
+          <span>Search</span>
+        </label>
         <input
           id="player-search"
           type="search"
-          placeholder="Name or position"
+          placeholder="Filter by name or position..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -326,6 +348,7 @@ export default function PlayersPage() {
             <thead>
               <tr>
                 <th className="pos-cell">#</th>
+                <th className="crest-col">Photo</th>
                 <th>Name</th>
                 <th>Position</th>
                 <th>Team</th>
@@ -353,6 +376,19 @@ export default function PlayersPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, jerseyNumber: e.target.value })
                               }
+                            />
+                          </td>
+                          <td className="crest-col">
+                            {/* Saves on its own the moment a file is chosen - it
+                                is not part of the row's Save, so cancelling an
+                                edit does not undo it. */}
+                            <ImageUpload
+                              endpoint={imageEndpoints.playerImage(player.playerId)}
+                              value={player.imageUrl}
+                              name={player.name}
+                              variant="avatar"
+                              helpText="Saved immediately."
+                              onChange={(imageUrl) => applyPhoto(player.playerId, imageUrl)}
                             />
                           </td>
                           <td>
@@ -416,17 +452,20 @@ export default function PlayersPage() {
                             </select>
                           </td>
                           <td className="actions-col">
-                            <button
-                              type="button"
-                              className="btn-primary btn-small"
-                              onClick={() => handleSave(player.playerId)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? 'Saving...' : 'Save'}
-                            </button>
-                            <button type="button" className="btn-link" onClick={cancelEdit}>
-                              Cancel
-                            </button>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn-action btn-action-save"
+                                onClick={() => handleSave(player.playerId)}
+                                disabled={isBusy}
+                              >
+                                <Icon name="check" size={14} />
+                                <span>{isBusy ? 'Saving...' : 'Save'}</span>
+                              </button>
+                              <button type="button" className="btn-action btn-action-cancel" onClick={cancelEdit}>
+                                <span>Cancel</span>
+                              </button>
+                            </div>
                           </td>
                         </>
                       ) : (
@@ -438,9 +477,27 @@ export default function PlayersPage() {
                               <span className="muted">-</span>
                             )}
                           </td>
+                          <td className="crest-col">
+                            <EntityImage
+                              src={player.imageUrl}
+                              name={player.name}
+                              variant="avatar"
+                              className="entity-image-lg"
+                            />
+                          </td>
                           <td className="table-id">{player.name}</td>
                           <td>{player.position ?? <span className="muted">-</span>}</td>
-                          <td>{player.teamName}</td>
+                          <td>
+                            <span className="team-cell">
+                              <EntityImage
+                                src={player.teamLogoUrl}
+                                name={player.teamName}
+                                variant="logo"
+                                className="entity-image-xs"
+                              />
+                              <span>{player.teamName}</span>
+                            </span>
+                          </td>
                           <td className="num">
                             {player.age ?? <span className="muted">-</span>}
                           </td>
@@ -454,21 +511,27 @@ export default function PlayersPage() {
                             )}
                           </td>
                           <td className="actions-col">
-                            <button
-                              type="button"
-                              className="btn-link"
-                              onClick={() => startEdit(player)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-link btn-danger"
-                              onClick={() => setPendingDelete(player)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? 'Working...' : 'Delete'}
-                            </button>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn-action btn-action-edit"
+                                onClick={() => startEdit(player)}
+                                title="Edit Player"
+                              >
+                                <Icon name="edit" size={14} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action btn-action-delete"
+                                onClick={() => setPendingDelete(player)}
+                                disabled={isBusy}
+                                title="Delete Player"
+                              >
+                                <Icon name="trash" size={14} />
+                                <span>{isBusy ? '...' : 'Delete'}</span>
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -476,7 +539,7 @@ export default function PlayersPage() {
 
                     {rowError?.playerId === player.playerId && (
                       <tr className="row-error">
-                        <td colSpan={7} role="alert">
+                        <td colSpan={8} role="alert">
                           {rowError.message}
                         </td>
                       </tr>

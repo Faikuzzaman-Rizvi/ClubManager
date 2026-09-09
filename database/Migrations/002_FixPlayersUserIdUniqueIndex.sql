@@ -1,5 +1,5 @@
 /* =====================================================================
-   Migration - replace UQ_Players_UserId with a filtered unique index.
+   002 - Replace UQ_Players_UserId with a filtered unique index.
 
    The original constraint was UNIQUE(UserId) on a nullable column. SQL Server
    treats NULLs as equal for uniqueness, so that constraint allowed only ONE
@@ -7,16 +7,10 @@
    login-less player club-wide. A filtered index gives the intended rule:
    at most one player per login account, unlimited players with no account.
 
-   Only needed for databases created before this fix; 01_schema.sql now builds
-   the filtered index directly. Safe to re-run.
+   Only databases created before this fix have anything to change; migration
+   001 now builds the filtered index directly, so on a fresh database this
+   runs as a no-op and is simply recorded as applied.
    ===================================================================== */
-
-USE ClubManagerDb;
-GO
-
-/* Required for the filtered unique index below; sqlcmd leaves this OFF by default. */
-SET QUOTED_IDENTIFIER ON;
-GO
 
 IF EXISTS (SELECT 1 FROM sys.key_constraints
            WHERE name = 'UQ_Players_UserId'
@@ -36,9 +30,5 @@ BEGIN
         WHERE UserId IS NOT NULL;
 
     PRINT 'Created filtered unique index UX_Players_UserId.';
-END
-ELSE
-BEGIN
-    PRINT 'UX_Players_UserId already exists - nothing to do.';
 END
 GO

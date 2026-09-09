@@ -4,8 +4,12 @@ import { apiErrorMessage } from '../../api/apiError';
 import Pagination from '../../components/Pagination';
 import PageHeader from '../../components/ui/PageHeader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import EntityImage from '../../components/ui/EntityImage';
+import ImageUpload from '../../components/ui/ImageUpload';
+import { imageEndpoints } from '../../api/images';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { useAuth } from '../../context/useAuth';
+import Icon from '../../components/ui/Icon';
 
 const PAGE_SIZE = 10;
 const EMPTY_FORM = { name: '', position: '', jerseyNumber: '', age: '' };
@@ -93,6 +97,17 @@ export default function MyTeamPlayers() {
     }
 
     return null;
+  }
+
+  /*
+   * Folds a photo change into the loaded list. The upload is already stored by
+   * the time this runs, so this is a local sync rather than a save - which is
+   * what keeps the table from reloading after every image.
+   */
+  function applyPhoto(playerId, imageUrl) {
+    setPlayers((current) =>
+      current.map((player) => (player.playerId === playerId ? { ...player, imageUrl } : player)),
+    );
   }
 
   async function handleCreate(event) {
@@ -274,7 +289,8 @@ export default function MyTeamPlayers() {
         </div>
 
         <button type="submit" className="btn-primary" disabled={creating}>
-          {creating ? 'Adding...' : 'Add player'}
+          <Icon name="plus" size={15} />
+          <span>{creating ? 'Adding...' : 'Add player'}</span>
         </button>
       </form>
 
@@ -291,11 +307,14 @@ export default function MyTeamPlayers() {
       )}
 
       <div className="filter-row">
-        <label htmlFor="squad-search">Search</label>
+        <label htmlFor="squad-search">
+          <Icon name="search" size={14} />
+          <span>Search</span>
+        </label>
         <input
           id="squad-search"
           type="search"
-          placeholder="Name or position"
+          placeholder="Filter squad by name or position..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -323,6 +342,7 @@ export default function MyTeamPlayers() {
               <thead>
                 <tr>
                   <th className="pos-cell">#</th>
+                  <th className="crest-col">Photo</th>
                   <th>Name</th>
                   <th>Position</th>
                   <th className="num">Age</th>
@@ -351,6 +371,19 @@ export default function MyTeamPlayers() {
                                 onChange={(e) =>
                                   setEditForm({ ...editForm, jerseyNumber: e.target.value })
                                 }
+                              />
+                            </td>
+                            <td className="crest-col">
+                              {/* Saves on its own the moment a file is chosen -
+                                  it is not part of the row's Save, so cancelling
+                                  an edit does not undo it. */}
+                              <ImageUpload
+                                endpoint={imageEndpoints.playerImage(player.playerId)}
+                                value={player.imageUrl}
+                                name={player.name}
+                                variant="avatar"
+                                helpText="Saved immediately."
+                                onChange={(imageUrl) => applyPhoto(player.playerId, imageUrl)}
                               />
                             </td>
                             <td>
@@ -390,62 +423,79 @@ export default function MyTeamPlayers() {
                               )}
                             </td>
                             <td className="actions-col">
+                            <div className="table-actions">
                               <button
                                 type="button"
-                                className="btn-primary btn-small"
+                                className="btn-action btn-action-save"
                                 onClick={() => handleSave(player)}
                                 disabled={isBusy}
                               >
-                                {isBusy ? 'Saving...' : 'Save'}
+                                <Icon name="check" size={14} />
+                                <span>{isBusy ? 'Saving...' : 'Save'}</span>
                               </button>
-                              <button type="button" className="btn-link" onClick={cancelEdit}>
-                                Cancel
+                              <button type="button" className="btn-action btn-action-cancel" onClick={cancelEdit}>
+                                <span>Cancel</span>
                               </button>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="pos-cell">
-                              {player.jerseyNumber != null ? (
-                                <span className="jersey-badge">{player.jerseyNumber}</span>
-                              ) : (
-                                <span className="muted">-</span>
-                              )}
-                            </td>
-                            <td className="table-id">{player.name}</td>
-                            <td>{player.position ?? <span className="muted">-</span>}</td>
-                            <td className="num">{player.age ?? <span className="muted">-</span>}</td>
-                            <td>
-                              {player.userId != null ? (
-                                <span className="pill pill-completed">Linked</span>
-                              ) : (
-                                <span className="muted">-</span>
-                              )}
-                            </td>
-                            <td className="actions-col">
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="pos-cell">
+                            {player.jerseyNumber != null ? (
+                              <span className="jersey-badge">{player.jerseyNumber}</span>
+                            ) : (
+                              <span className="muted">-</span>
+                            )}
+                          </td>
+                          <td className="crest-col">
+                            <EntityImage
+                              src={player.imageUrl}
+                              name={player.name}
+                              variant="avatar"
+                              className="entity-image-lg"
+                            />
+                          </td>
+                          <td className="table-id">{player.name}</td>
+                          <td>{player.position ?? <span className="muted">-</span>}</td>
+                          <td className="num">{player.age ?? <span className="muted">-</span>}</td>
+                          <td>
+                            {player.userId != null ? (
+                              <span className="pill pill-completed">Linked</span>
+                            ) : (
+                              <span className="muted">-</span>
+                            )}
+                          </td>
+                          <td className="actions-col">
+                            <div className="table-actions">
                               <button
                                 type="button"
-                                className="btn-link"
+                                className="btn-action btn-action-edit"
                                 onClick={() => startEdit(player)}
+                                title="Edit Squad Player"
                               >
-                                Edit
+                                <Icon name="edit" size={14} />
+                                <span>Edit</span>
                               </button>
                               <button
                                 type="button"
-                                className="btn-link btn-danger"
+                                className="btn-action btn-action-delete"
                                 onClick={() => setPendingDelete(player)}
                                 disabled={isBusy}
+                                title="Remove Player"
                               >
-                                {isBusy ? 'Working...' : 'Remove'}
+                                <Icon name="trash" size={14} />
+                                <span>{isBusy ? '...' : 'Remove'}</span>
                               </button>
-                            </td>
-                          </>
-                        )}
+                            </div>
+                          </td>
+                        </>
+                      )}
                       </tr>
 
                       {rowError?.playerId === player.playerId && (
                         <tr className="row-error">
-                          <td colSpan={6} role="alert">
+                          <td colSpan={7} role="alert">
                             {rowError.message}
                           </td>
                         </tr>

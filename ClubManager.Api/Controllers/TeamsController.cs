@@ -16,10 +16,12 @@ namespace ClubManager.Api.Controllers;
 public class TeamsController : ApiControllerBase
 {
     private readonly ITeamService _teamService;
+    private readonly IImageService _imageService;
 
-    public TeamsController(ITeamService teamService)
+    public TeamsController(ITeamService teamService, IImageService imageService)
     {
         _teamService = teamService;
+        _imageService = imageService;
     }
 
     /// <summary>Lists every team, ordered by name.</summary>
@@ -93,6 +95,41 @@ public class TeamsController : ApiControllerBase
 
         return result.Succeeded
             ? NoContent()
+            : ToErrorResult(result);
+    }
+    /// <summary>
+    /// Uploads or replaces the club crest. Admin only. JPG, PNG or WebP;
+    /// re-encoded to WebP on the server.
+    /// </summary>
+    [HttpPost("{id:int}/logo")]
+    [Authorize(Roles = Roles.Admin)]
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ImageUploadResponse>> SetLogo(
+        int id, IFormFile file, CancellationToken cancellationToken)
+    {
+        var result = await _imageService.SetTeamLogoAsync(id, file, cancellationToken);
+
+        return result.Succeeded
+            ? Ok(result.Value)
+            : ToErrorResult(result);
+    }
+
+    /// <summary>Removes the club crest and deletes the stored file. Admin only.</summary>
+    [HttpDelete("{id:int}/logo")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ImageUploadResponse>> RemoveLogo(int id)
+    {
+        var result = await _imageService.RemoveTeamLogoAsync(id);
+
+        return result.Succeeded
+            ? Ok(result.Value)
             : ToErrorResult(result);
     }
 }

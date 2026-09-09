@@ -28,13 +28,19 @@ public interface IMatchRepository
 public class MatchWithTeams : Match
 {
     public string HomeTeamName { get; set; } = string.Empty;
+    public string? HomeTeamLogoUrl { get; set; }
+
     public string AwayTeamName { get; set; } = string.Empty;
+    public string? AwayTeamLogoUrl { get; set; }
 }
 
 /// <summary>A goal row joined to the scorer and the scorer's team.</summary>
 public class GoalWithPlayer : Goal
 {
     public string PlayerName { get; set; } = string.Empty;
+    public string? PlayerImageUrl { get; set; }
+
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
+    public string? TeamLogoUrl { get; set; }
 }

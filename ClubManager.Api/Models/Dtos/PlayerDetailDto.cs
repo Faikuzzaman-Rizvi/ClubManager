@@ -11,6 +11,12 @@ public class PlayerDetailDto
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
 
+    /// <summary>Site-relative path to the player photo. Null when none is set - render initials.</summary>
+    public string? ImageUrl { get; set; }
+
+    /// <summary>The crest of the team above, so a profile can show it without a second request.</summary>
+    public string? TeamLogoUrl { get; set; }
+
     /// <summary>Null when this player has no login account.</summary>
     public int? UserId { get; set; }
 

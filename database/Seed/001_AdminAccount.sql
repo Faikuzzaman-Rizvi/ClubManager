@@ -1,15 +1,18 @@
 /* =====================================================================
-   ClubManager - seed the single bootstrap Admin account.
-   Run after 01_schema.sql. Safe to re-run (inserts only if missing).
+   Seed - the single bootstrap Admin account.
+
+   Seed scripts run on every publish and must therefore be idempotent: this
+   one inserts only when the account is missing, and never touches an
+   existing row, so a changed password survives a re-publish.
 
    Username : admin
    Password : Admin@123
    The hash below is BCrypt (work factor 12) of that password.
    >>> Change this password after the first login on any real deployment.
-   ===================================================================== */
 
-USE ClubManagerDb;
-GO
+   Admin accounts exist only through this script - POST /api/auth/register
+   mints Coach and Player logins only.
+   ===================================================================== */
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = N'admin')
 BEGIN
@@ -20,9 +23,5 @@ BEGIN
             NULL);
 
     PRINT 'Seeded Admin user: admin / Admin@123';
-END
-ELSE
-BEGIN
-    PRINT 'Admin user already exists - nothing to do.';
 END
 GO

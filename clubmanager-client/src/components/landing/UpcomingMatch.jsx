@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import EntityImage from '../ui/EntityImage';
 import { formatMatchDate } from '../../helpers/datetime';
 
 const UNITS = [
@@ -68,11 +69,27 @@ export default function UpcomingMatch({ matches, loading, canRead }) {
       ) : (
         <div className="ld-next-card" data-reveal>
           <div className="ld-next-teams">
-            <span className="ld-next-team">{next.homeTeamName}</span>
+            <span className="ld-next-team">
+              <EntityImage
+                src={next.homeTeamLogoUrl}
+                name={next.homeTeamName}
+                variant="logo"
+                className="ld-crest ld-crest-lg"
+              />
+              {next.homeTeamName}
+            </span>
             <span className="ld-next-vs" aria-hidden="true">
               vs
             </span>
-            <span className="ld-next-team">{next.awayTeamName}</span>
+            <span className="ld-next-team">
+              <EntityImage
+                src={next.awayTeamLogoUrl}
+                name={next.awayTeamName}
+                variant="logo"
+                className="ld-crest ld-crest-lg"
+              />
+              {next.awayTeamName}
+            </span>
           </div>
 
           <p className="ld-next-when">
