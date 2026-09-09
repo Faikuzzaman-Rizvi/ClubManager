@@ -7,16 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ClubManager.Api.Controllers;
 
 /// <summary>
-/// User accounts. The directory is Admin only - it exists so the admin screens
-/// can offer "link a Player login" pickers - while the /me endpoints below are
-/// each caller's own and open to any signed-in role. Password hashes never leave
-/// the repository.
+/// User accounts and profile management.
 /// </summary>
-/// <remarks>
-/// The Admin restriction sits on the action rather than the controller: a
-/// second <c>[Authorize]</c> would be ANDed with a class-level one, so a
-/// class-wide Admin requirement could not be relaxed for /me.
-/// </remarks>
 [Route("api/users")]
 [Authorize]
 public class UsersController : ApiControllerBase
@@ -40,9 +32,54 @@ public class UsersController : ApiControllerBase
         return Ok(await _userService.GetAllAsync());
     }
 
+    /// <summary>Returns the signed-in caller's detailed profile.</summary>
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserDetailDto>> GetMyProfile()
+    {
+        var result = await _userService.GetMyProfileAsync(User.ToCallerContext());
+        return result.Succeeded ? Ok(result.Value) : ToErrorResult(result);
+    }
+
+    /// <summary>Updates the signed-in caller's profile (username, password).</summary>
+    [HttpPut("me")]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<UserDetailDto>> UpdateMyProfile([FromBody] UpdateMyProfileRequest request)
+    {
+        var result = await _userService.UpdateMyProfileAsync(request, User.ToCallerContext());
+        return result.Succeeded ? Ok(result.Value) : ToErrorResult(result);
+    }
+
+    /// <summary>Gets a specific user's detailed profile. Admin or self.</summary>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserDetailDto>> GetById(int id)
+    {
+        var result = await _userService.GetByIdAsync(id, User.ToCallerContext());
+        return result.Succeeded ? Ok(result.Value) : ToErrorResult(result);
+    }
+
+    /// <summary>Updates any user's profile details. Admin only.</summary>
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<UserDetailDto>> Update(int id, [FromBody] UpdateUserRequest request)
+    {
+        var result = await _userService.UpdateAsync(id, request, User.ToCallerContext());
+        return result.Succeeded ? Ok(result.Value) : ToErrorResult(result);
+    }
+
     /// <summary>
-    /// Uploads or replaces the signed-in caller's own avatar. Any role. The
-    /// account is taken from the token, so there is no id to tamper with.
+    /// Uploads or replaces the signed-in caller's own avatar.
     /// </summary>
     [HttpPost("me/avatar")]
     [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
@@ -61,9 +98,7 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Removes the caller's own avatar. For a Player this reveals their player
-    /// photo again rather than clearing the picture outright, so the response
-    /// carries whatever the UI should now draw.
+    /// Removes the caller's own avatar.
     /// </summary>
     [HttpDelete("me/avatar")]
     [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
@@ -71,6 +106,40 @@ public class UsersController : ApiControllerBase
     public async Task<ActionResult<ImageUploadResponse>> RemoveOwnAvatar()
     {
         var result = await _imageService.RemoveOwnAvatarAsync(User.ToCallerContext());
+
+        return result.Succeeded
+            ? Ok(result.Value)
+            : ToErrorResult(result);
+    }
+
+    /// <summary>
+    /// Uploads or replaces a user's avatar. Admin or the user themselves.
+    /// </summary>
+    [HttpPost("{id:int}/avatar")]
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ImageUploadResponse>> SetUserAvatar(
+        int id, IFormFile file, CancellationToken cancellationToken)
+    {
+        var result = await _imageService.SetUserAvatarAsync(
+            id, file, User.ToCallerContext(), cancellationToken);
+
+        return result.Succeeded
+            ? Ok(result.Value)
+            : ToErrorResult(result);
+    }
+
+    /// <summary>
+    /// Removes a user's avatar. Admin or the user themselves.
+    /// </summary>
+    [HttpDelete("{id:int}/avatar")]
+    [ProducesResponseType(typeof(ImageUploadResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ImageUploadResponse>> RemoveUserAvatar(int id)
+    {
+        var result = await _imageService.RemoveUserAvatarAsync(id, User.ToCallerContext());
 
         return result.Succeeded
             ? Ok(result.Value)

@@ -15,10 +15,13 @@ import TeamsPage from './pages/admin/TeamsPage';
 import PlayersPage from './pages/admin/PlayersPage';
 import MatchesPage from './pages/admin/MatchesPage';
 import UsersPage from './pages/admin/UsersPage';
+import AdminProfile from './pages/admin/AdminProfile';
+import UserProfileAdminView from './pages/admin/UserProfileAdminView';
 
 import CoachDashboard from './pages/coach/Dashboard';
 import MyTeamPlayers from './pages/coach/MyTeamPlayers';
 import MatchResultEntry from './pages/coach/MatchResultEntry';
+import CoachProfile from './pages/coach/CoachProfile';
 
 import MyProfile from './pages/player/MyProfile';
 
@@ -56,6 +59,14 @@ export default function App() {
           path="/admin/users"
           element={<ProtectedRoute roles={['Admin']}><UsersPage /></ProtectedRoute>}
         />
+        <Route
+          path="/admin/users/:userId"
+          element={<ProtectedRoute roles={['Admin']}><UserProfileAdminView /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/profile"
+          element={<ProtectedRoute roles={['Admin']}><AdminProfile /></ProtectedRoute>}
+        />
 
         {/* Coach */}
         <Route
@@ -69,6 +80,10 @@ export default function App() {
         <Route
           path="/coach/results"
           element={<ProtectedRoute roles={['Coach']}><MatchResultEntry /></ProtectedRoute>}
+        />
+        <Route
+          path="/coach/profile"
+          element={<ProtectedRoute roles={['Coach']}><CoachProfile /></ProtectedRoute>}
         />
 
         {/* Player - the profile is the player's whole surface. */}

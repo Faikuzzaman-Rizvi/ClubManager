@@ -149,31 +149,53 @@ public class ImageService : IImageService
     public async Task<ServiceResult<ImageUploadResponse>> SetOwnAvatarAsync(
         IFormFile file, CallerContext caller, CancellationToken cancellationToken)
     {
+        return await SetUserAvatarAsync(caller.UserId, file, caller, cancellationToken);
+    }
+
+    public async Task<ServiceResult<ImageUploadResponse>> RemoveOwnAvatarAsync(CallerContext caller)
+    {
+        return await RemoveUserAvatarAsync(caller.UserId, caller);
+    }
+
+    public async Task<ServiceResult<ImageUploadResponse>> SetUserAvatarAsync(
+        int userId, IFormFile file, CallerContext caller, CancellationToken cancellationToken)
+    {
+        if (!caller.IsAdmin && caller.UserId != userId)
+        {
+            return ServiceResult<ImageUploadResponse>.Fail(
+                "You do not have permission to change this avatar.", ServiceErrorType.Forbidden);
+        }
+
         var saved = await _storage.SaveAsync(file, ImageKind.UserAvatar, cancellationToken);
         if (!saved.Succeeded)
         {
             return ServiceResult<ImageUploadResponse>.Fail(saved.Error!);
         }
 
-        var change = await _userRepository.SetAvatarAsync(caller.UserId, saved.RelativeUrl);
+        var change = await _userRepository.SetAvatarAsync(userId, saved.RelativeUrl);
 
         if (!change.Found)
         {
-            // The account behind a still-valid token was deleted.
             _storage.Delete(saved.RelativeUrl);
             return ServiceResult<ImageUploadResponse>.Fail(
                 "This account no longer exists.", ServiceErrorType.NotFound);
         }
 
         _storage.Delete(change.PreviousUrl);
-        _logger.LogInformation("Set the avatar for user {UserId}.", caller.UserId);
+        _logger.LogInformation("Set the avatar for user {UserId}.", userId);
 
         return Ok(saved.RelativeUrl);
     }
 
-    public async Task<ServiceResult<ImageUploadResponse>> RemoveOwnAvatarAsync(CallerContext caller)
+    public async Task<ServiceResult<ImageUploadResponse>> RemoveUserAvatarAsync(int userId, CallerContext caller)
     {
-        var change = await _userRepository.SetAvatarAsync(caller.UserId, null);
+        if (!caller.IsAdmin && caller.UserId != userId)
+        {
+            return ServiceResult<ImageUploadResponse>.Fail(
+                "You do not have permission to remove this avatar.", ServiceErrorType.Forbidden);
+        }
+
+        var change = await _userRepository.SetAvatarAsync(userId, null);
         if (!change.Found)
         {
             return ServiceResult<ImageUploadResponse>.Fail(
@@ -181,13 +203,11 @@ public class ImageService : IImageService
         }
 
         _storage.Delete(change.PreviousUrl);
-        _logger.LogInformation("Removed the avatar for user {UserId}.", caller.UserId);
+        _logger.LogInformation("Removed the avatar for user {UserId}.", userId);
 
-        // Not necessarily null: a Player who clears their avatar falls back to
-        // their player photo, and the client needs to draw that rather than
-        // dropping to initials.
-        return Ok(await _userRepository.GetEffectiveAvatarUrlAsync(caller.UserId));
+        return Ok(await _userRepository.GetEffectiveAvatarUrlAsync(userId));
     }
+
 
     /* --------------------------------------------------------------- plumbing */
 

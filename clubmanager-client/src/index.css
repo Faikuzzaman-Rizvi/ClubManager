@@ -287,6 +287,16 @@ a:hover {
   border-radius: var(--radius-sm);
   background: rgba(16, 26, 21, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.04);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--transition), border-color var(--transition);
+  cursor: pointer;
+}
+
+.side-account:hover {
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+  text-decoration: none;
 }
 
 .side-account-avatar-wrap {
@@ -2024,6 +2034,48 @@ tr.pos-gold .scorer-goal-badge {
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
+
+/* -------------------------------------------------- profile edit forms */
+.profile-edit-card {
+  margin-top: var(--space-5);
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.profile-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-form-group label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.profile-form-group input,
+.profile-form-group select {
+  height: 40px;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.profile-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-soft);
+}
+
 
 /* ========================================================= auth page == */
 .auth-screen {

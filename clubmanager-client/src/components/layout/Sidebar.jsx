@@ -17,6 +17,7 @@ const ROLE_SECTIONS = {
       { to: '/admin/players', label: 'Players', icon: 'players' },
       { to: '/admin/matches', label: 'Matches', icon: 'matches' },
       { to: '/admin/users', label: 'User Accounts', icon: 'users' },
+      { to: '/admin/profile', label: 'My Profile', icon: 'player' },
     ],
   },
   Coach: {
@@ -25,6 +26,7 @@ const ROLE_SECTIONS = {
       { to: '/coach', label: 'Dashboard', icon: 'dashboard', end: true },
       { to: '/coach/players', label: 'My Squad', icon: 'players' },
       { to: '/coach/results', label: 'Fixtures', icon: 'matches' },
+      { to: '/coach/profile', label: 'My Profile', icon: 'player' },
     ],
   },
   Player: {
@@ -36,6 +38,8 @@ const ROLE_SECTIONS = {
 export default function Sidebar({ open, onNavigate }) {
   const { isAuthenticated, user, role } = useAuth();
   const section = isAuthenticated ? ROLE_SECTIONS[role] : null;
+  const profileRoute =
+    role === 'Admin' ? '/admin/profile' : role === 'Coach' ? '/coach/profile' : '/player/profile';
 
   return (
     <aside className={`sidebar ${open ? 'is-open' : ''}`} id="app-sidebar">
@@ -97,7 +101,12 @@ export default function Sidebar({ open, onNavigate }) {
 
       {isAuthenticated && (
         <div className="side-foot">
-          <div className="side-account">
+          <Link
+            to={profileRoute}
+            className="side-account"
+            onClick={onNavigate}
+            title="View your profile"
+          >
             <div className="side-account-avatar-wrap">
               <EntityImage
                 src={user?.avatarUrl}
@@ -111,7 +120,7 @@ export default function Sidebar({ open, onNavigate }) {
               <span className="side-account-name">{user?.username}</span>
               <span className={`badge badge-sm badge-${(role ?? '').toLowerCase()}`}>{role}</span>
             </div>
-          </div>
+          </Link>
         </div>
       )}
     </aside>

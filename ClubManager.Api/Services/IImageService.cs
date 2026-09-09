@@ -35,4 +35,12 @@ public interface IImageService
         IFormFile file, CallerContext caller, CancellationToken cancellationToken);
 
     Task<ServiceResult<ImageUploadResponse>> RemoveOwnAvatarAsync(CallerContext caller);
+
+    /// <summary>
+    /// Avatar for a specific user. Allowed for Admin or the user themselves.
+    /// </summary>
+    Task<ServiceResult<ImageUploadResponse>> SetUserAvatarAsync(
+        int userId, IFormFile file, CallerContext caller, CancellationToken cancellationToken);
+
+    Task<ServiceResult<ImageUploadResponse>> RemoveUserAvatarAsync(int userId, CallerContext caller);
 }

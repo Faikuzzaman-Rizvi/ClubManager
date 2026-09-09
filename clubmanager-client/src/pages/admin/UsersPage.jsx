@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { apiErrorMessage } from '../../api/apiError';
 import Pagination from '../../components/Pagination';
@@ -251,6 +252,7 @@ export default function UsersPage() {
                   <th>Username</th>
                   <th>Role</th>
                   <th>Team</th>
+                  <th className="num">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,6 +278,15 @@ export default function UsersPage() {
                       ) : (
                         <span className="muted">-</span>
                       )}
+                    </td>
+                    <td className="num">
+                      <Link
+                        to={`/admin/users/${user.userId}`}
+                        className="btn-secondary btn-small"
+                      >
+                        <Icon name="player" size={13} />
+                        <span>View Profile</span>
+                      </Link>
                     </td>
                   </tr>
                 ))}

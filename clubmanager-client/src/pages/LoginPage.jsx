@@ -115,7 +115,7 @@ export default function LoginPage() {
 
         <span className="auth-portal-badge">
           <span className="auth-pulse-dot" />
-          <span>Official Club Portal</span>
+          <span>Official Matchday Portal · Season 2026</span>
         </span>
       </header>
 
@@ -124,8 +124,8 @@ export default function LoginPage() {
         {/* Left Column: Interactive 3D Football Experience */}
         <section className="auth-hero-pane" ref={heroRef}>
           <div className="auth-hero-kicker">
-            <Icon name="ball" size={16} />
-            <span>Matchday & Squad Headquarters</span>
+            <span className="auth-kicker-icon">⚽</span>
+            <span>Official Matchday Portal · FIFA 2026 Trionda Edition</span>
           </div>
 
           <h1 className="auth-hero-title">
@@ -135,8 +135,8 @@ export default function LoginPage() {
           </h1>
 
           <p className="auth-hero-desc">
-            Tactical control center for club managers, coaching staff, and first-team players.
-            Real-time formations, match entry, squad metrics, and official league administration.
+            Official tactical control center for club managers, coaching staff, and squad players.
+            Real-time team formations, live match entry, official 2026 match ball analytics, and league operations.
           </p>
 
           {/* Interactive 3D Football Animation Scene */}
@@ -149,8 +149,8 @@ export default function LoginPage() {
                 <Icon name="matches" size={18} />
               </div>
               <div className="auth-feature-text">
-                <span className="auth-feature-title">Tactical Suite</span>
-                <span className="auth-feature-sub">Live fixtures & scores</span>
+                <span className="auth-feature-title">Trionda 26 Ball</span>
+                <span className="auth-feature-sub">FIFA Quality Pro</span>
               </div>
             </div>
 
@@ -159,8 +159,8 @@ export default function LoginPage() {
                 <Icon name="player" size={18} />
               </div>
               <div className="auth-feature-text">
-                <span className="auth-feature-title">Squad Hub</span>
-                <span className="auth-feature-sub">Roster & stats tracking</span>
+                <span className="auth-feature-title">Stadium Pitch</span>
+                <span className="auth-feature-sub">Live tactical metrics</span>
               </div>
             </div>
 
@@ -169,7 +169,7 @@ export default function LoginPage() {
                 <Icon name="shield" size={18} />
               </div>
               <div className="auth-feature-text">
-                <span className="auth-feature-title">Role Security</span>
+                <span className="auth-feature-title">Role Access</span>
                 <span className="auth-feature-sub">Admin, Coach & Player</span>
               </div>
             </div>

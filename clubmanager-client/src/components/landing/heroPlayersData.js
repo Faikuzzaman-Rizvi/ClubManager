@@ -1,7 +1,28 @@
-/**
- * Data for the Holy Trinity Hero Showcase: Lionel Messi, Cristiano Ronaldo, Neymar Jr.
+﻿/**
+ * Data for the Holy Trinity Hero Showcase + Official FIFA 2026 Trionda Match Ball.
  */
 export const HERO_PLAYERS = [
+  {
+    id: 'trionda',
+    isBall: true,
+    name: 'Adidas Trionda 2026',
+    shortName: '⚽ Trionda 26',
+    number: '26',
+    title: 'Official Match Ball',
+    role: 'FIFA World Cup 2026 Edition',
+    club: 'Official Tournament Match Ball',
+    accolades: 'Aerodynamic Speedshell · FIFA Quality Pro · Thermal Bonded Polyurethane',
+    image: '/images/hero/trionda_ball.jpg',
+    color: '#10b981', // Pitch Emerald & Scarlet Trionda
+    glowColor: 'rgba(16, 185, 129, 0.45)',
+    stats: [
+      { label: 'OVR', val: '99' },
+      { label: 'AERO', val: '98' },
+      { label: 'TOUCH', val: '99' },
+      { label: 'SWERVE', val: '96' },
+      { label: 'SPEED', val: '97' },
+    ],
+  },
   {
     id: 'messi',
     name: 'Lionel Messi',
@@ -52,8 +73,8 @@ export const HERO_PLAYERS = [
     club: 'Al Hilal / Brazil',
     accolades: 'Samba Virtuoso · 130+ Brazil G/A · Treble Winner',
     image: '/images/hero/neymar.jpg',
-    color: '#10b981', // Electric Pitch Emerald
-    glowColor: 'rgba(16, 185, 129, 0.45)',
+    color: '#2563eb', // Royal Blue & Electric Emerald
+    glowColor: 'rgba(37, 99, 235, 0.45)',
     stats: [
       { label: 'OVR', val: '91' },
       { label: 'PAC', val: '90' },

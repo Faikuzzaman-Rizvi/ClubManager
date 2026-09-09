@@ -69,6 +69,30 @@
   background: var(--ld-accent);
 }
 
+.ld-hero .ld-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 1.25rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 0.725rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 18px -4px rgba(16, 185, 129, 0.35);
+}
+
+.ld-hero .ld-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
 .ld-section-title {
   margin: 0;
   font-family: var(--font-display);
@@ -241,25 +265,53 @@
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(120% 90% at 50% 120%, #0d2a1e 0%, transparent 60%),
-    linear-gradient(180deg, #05100b 0%, #061710 55%, #05100b 100%);
+    /* Focused stadium spotlight glow pool on the ball & pitch */
+    radial-gradient(ellipse 75% 65% at 72% 68%, rgba(16, 185, 129, 0.22) 0%, rgba(5, 46, 26, 0.35) 45%, transparent 75%),
+    /* Secondary cool stadium rim glow */
+    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 65%),
+    /* Overhead floodlight atmospheric wash */
+    radial-gradient(ellipse 80% 60% at 65% 10%, rgba(255, 255, 255, 0.12) 0%, rgba(245, 158, 11, 0.06) 40%, transparent 75%),
+    /* Authentic stadium pitch turf gradient along the ground */
+    radial-gradient(130% 90% at 50% 120%, #0d361e 0%, #082213 45%, #030d07 85%),
+    /* Night match stadium darkness */
+    linear-gradient(180deg, #020a06 0%, #04140b 50%, #020905 100%);
 }
 
-/* Stadium-light wash from above. */
+/* Focused Stadium Floodlight Cone Beam - Inspired by the reference match ball photography */
 .ld-hero-glow {
   position: absolute;
-  top: -30%;
-  left: 50%;
-  width: min(1100px, 120%);
-  height: 90%;
-  transform: translateX(-50%);
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(217, 164, 65, 0.15) 0%,
-    rgba(217, 164, 65, 0.05) 45%,
-    transparent 72%
+  top: -35%;
+  right: 8%;
+  width: min(900px, 95vw);
+  height: 110%;
+  background: conic-gradient(
+    from 148deg at 60% 0%,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.18) 22deg,
+    rgba(56, 189, 248, 0.12) 36deg,
+    rgba(16, 185, 129, 0.18) 50deg,
+    transparent 72deg
   );
-  filter: blur(10px);
+  filter: blur(35px);
+  pointer-events: none;
+}
+
+/* Secondary atmospheric spotlight beam */
+.ld-hero-beam {
+  position: absolute;
+  top: -10%;
+  right: 22%;
+  width: 320px;
+  height: 90%;
+  transform: rotate(18deg);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(16, 185, 129, 0.12) 40%,
+    transparent 85%
+  );
+  filter: blur(48px);
+  pointer-events: none;
 }
 
 /* Pitch markings, kept faint enough to read as texture. */
@@ -363,6 +415,31 @@
   color: #fff;
 }
 
+.ld-hero-pill.is-trionda {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.22) 0%,
+    rgba(37, 99, 235, 0.15) 50%,
+    rgba(239, 68, 68, 0.18) 100%
+  );
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #fff;
+  box-shadow: 0 0 14px -3px rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+}
+
+.ld-hero-pill.is-trionda:hover {
+  border-color: #10b981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.55);
+  transform: translateY(-1px);
+}
+
+.ld-pill-ball-icon {
+  display: inline-block;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
 .ld-hero-pill .ui-icon {
   color: var(--ld-accent, #d9a441);
 }
@@ -423,6 +500,21 @@
   box-shadow: 0 0 16px -3px var(--tab-color, var(--ld-accent));
 }
 
+.ld-legend-tab.is-ball-tab {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.ld-legend-tab.is-ball-tab.is-active {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.25) 0%,
+    rgba(37, 99, 235, 0.2) 100%
+  );
+  border-color: #10b981;
+  box-shadow: 0 0 20px -2px rgba(16, 185, 129, 0.6);
+}
+
 .ld-legend-num {
   font-family: var(--font-display);
   font-weight: 800;
@@ -440,7 +532,7 @@
 .ld-hero-stage {
   position: relative;
   width: 100%;
-  height: clamp(340px, 44vw, 470px);
+  height: clamp(340px, 40vw, 450px);
   cursor: grab;
 }
 
@@ -473,15 +565,15 @@
 .ld-legend-hud {
   width: 100%;
   max-width: 480px;
-  background: rgba(10, 20, 15, 0.85);
+  background: rgba(8, 20, 14, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-top: 2px solid var(--hud-theme, var(--ld-accent));
   border-radius: 12px;
-  padding: 1.05rem 1.25rem;
+  padding: 0.95rem 1.2rem;
   box-shadow:
-    0 20px 40px -10px rgba(0, 0, 0, 0.7),
+    0 20px 40px -10px rgba(0, 0, 0, 0.75),
     0 0 28px -10px var(--hud-theme, var(--ld-accent));
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   z-index: 5;

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useState, useEffect, useCallback } from 'react';
+﻿import { Suspense, lazy, useMemo, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
 import SceneBoundary from './SceneBoundary';
@@ -26,23 +26,24 @@ export default function Hero({ onExplore }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  const activePlayer = HERO_PLAYERS[activeIndex] ?? HERO_PLAYERS[0];
+  const activeItem = HERO_PLAYERS[activeIndex] ?? HERO_PLAYERS[0];
 
-  // Auto-advance through the legends every 6.5s unless hovered
-  const nextPlayer = useCallback(() => {
+  // Auto-advance through showcase every 6.5s unless hovered or paused
+  const nextItem = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % HERO_PLAYERS.length);
   }, []);
 
   useEffect(() => {
     if (isPaused) return undefined;
-    const timer = setInterval(nextPlayer, 6500);
+    const timer = setInterval(nextItem, 6500);
     return () => clearInterval(timer);
-  }, [isPaused, nextPlayer]);
+  }, [isPaused, nextItem]);
 
   return (
     <section className="ld-hero" id="home">
       <div className="ld-hero-bg" aria-hidden="true">
         <span className="ld-hero-glow" data-hero="glow" />
+        <span className="ld-hero-beam" />
         <span className="ld-hero-pitch" />
         <span className="ld-hero-grain" />
       </div>
@@ -52,7 +53,7 @@ export default function Hero({ onExplore }) {
         <div className="ld-hero-copy">
           <p className="ld-eyebrow" data-hero="label">
             <span className="ld-eyebrow-dot" aria-hidden="true" />
-            Official Club Headquarters · Season 2026
+            Official Match Ball · FIFA 2026 Trionda Edition
           </p>
 
           <h1 className="ld-hero-title">
@@ -67,8 +68,9 @@ export default function Hero({ onExplore }) {
           </h1>
 
           <p className="ld-hero-lead" data-hero="copy">
-            Command your squad, track live match intelligence, and follow football greatness.
-            Real-time tactical metrics, live scores, and legendary player analytics.
+            Command your squad on authentic stadium turf, track live match intelligence,
+            and inspect the official 2026 tournament match ball with real-time aerodynamics
+            and legendary player analytics.
           </p>
 
           <div className="ld-hero-actions">
@@ -85,8 +87,12 @@ export default function Hero({ onExplore }) {
             </Link>
           </div>
 
-          {/* Quick League Metric Badges */}
+          {/* Quick League & Match Ball Metric Badges */}
           <div className="ld-hero-pills" data-hero="copy">
+            <span className="ld-hero-pill is-trionda" onClick={() => setActiveIndex(0)} role="button" tabIndex={0}>
+              <span className="ld-pill-ball-icon" aria-hidden="true">⚽</span>
+              <span>Trionda 2026 Ball</span>
+            </span>
             <span className="ld-hero-pill">
               <Icon name="teams" size={13} />
               <span>20 Elite Clubs</span>
@@ -97,46 +103,48 @@ export default function Hero({ onExplore }) {
             </span>
             <span className="ld-hero-pill">
               <Icon name="chart" size={13} />
-              <span>Live Engine</span>
+              <span>Pitch Engine</span>
             </span>
           </div>
         </div>
 
-        {/* Right Column: 3D Legends Stage & Tactical HUD */}
+        {/* Right Column: 3D Match Ball & Legends Stage */}
         <div
           className="ld-hero-stage-wrap"
           data-hero="stage"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {/* Legend Switcher Pills */}
-          <div className="ld-legend-switcher" role="tablist" aria-label="Select Legend">
-            {HERO_PLAYERS.map((player, idx) => {
+          {/* Showcase Switcher Pills */}
+          <div className="ld-legend-switcher" role="tablist" aria-label="Select Showcase Item">
+            {HERO_PLAYERS.map((item, idx) => {
               const isActive = idx === activeIndex;
               return (
                 <button
-                  key={player.id}
+                  key={item.id}
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  className={`ld-legend-tab ${isActive ? 'is-active' : ''}`}
+                  className={`ld-legend-tab ${isActive ? 'is-active' : ''} ${item.isBall ? 'is-ball-tab' : ''}`}
                   onClick={() => {
                     setActiveIndex(idx);
                     setIsPaused(true);
                   }}
                   style={{
-                    '--tab-color': player.color,
+                    '--tab-color': item.color,
                   }}
                 >
-                  <span className="ld-legend-num">#{player.number}</span>
-                  <span className="ld-legend-name">{player.shortName}</span>
+                  <span className="ld-legend-num">
+                    {item.isBall ? '⚽' : `#${item.number}`}
+                  </span>
+                  <span className="ld-legend-name">{item.shortName.replace('⚽ ', '')}</span>
                   {isActive && <span className="ld-legend-dot" aria-hidden="true" />}
                 </button>
               );
             })}
           </div>
 
-          {/* 3D Three.js Card Deck Canvas */}
+          {/* 3D Three.js Match Ball & Player Deck Canvas */}
           <div className="ld-hero-stage">
             {canRender3D && (
               <SceneBoundary>
@@ -144,8 +152,8 @@ export default function Hero({ onExplore }) {
                   fallback={
                     <div className="ld-stage-fallback">
                       <img
-                        src={activePlayer.image}
-                        alt={activePlayer.name}
+                        src={activeItem.image}
+                        alt={activeItem.name}
                         className="ld-stage-fallback-img"
                       />
                     </div>
@@ -163,31 +171,33 @@ export default function Hero({ onExplore }) {
             )}
           </div>
 
-          {/* Tactical Legend HUD Card */}
+          {/* Tactical HUD / Spec Card */}
           <div
             className="ld-legend-hud"
             style={{
-              '--hud-theme': activePlayer.color,
+              '--hud-theme': activeItem.color,
             }}
           >
             <div className="ld-hud-header">
               <div className="ld-hud-title-wrap">
-                <span className="ld-hud-badge">#{activePlayer.number} · {activePlayer.title}</span>
-                <h3 className="ld-hud-name">{activePlayer.name}</h3>
-                <p className="ld-hud-accolade">{activePlayer.accolades}</p>
+                <span className="ld-hud-badge">
+                  {activeItem.isBall ? 'FIFA QUALITY PRO' : `#${activeItem.number}`} · {activeItem.title}
+                </span>
+                <h3 className="ld-hud-name">{activeItem.name}</h3>
+                <p className="ld-hud-accolade">{activeItem.accolades}</p>
               </div>
 
               <div className="ld-hud-ovr-box">
-                <span className="ld-hud-ovr-label">OVR</span>
+                <span className="ld-hud-ovr-label">{activeItem.isBall ? 'RATING' : 'OVR'}</span>
                 <span className="ld-hud-ovr-val">
-                  {activePlayer.stats.find((s) => s.label === 'OVR')?.val ?? '94'}
+                  {activeItem.stats.find((s) => s.label === 'OVR')?.val ?? '99'}
                 </span>
               </div>
             </div>
 
             {/* Micro Stats Bar */}
             <div className="ld-hud-stats">
-              {activePlayer.stats
+              {activeItem.stats
                 .filter((s) => s.label !== 'OVR')
                 .map((st) => (
                   <div className="ld-hud-stat-item" key={st.label}>
@@ -197,14 +207,18 @@ export default function Hero({ onExplore }) {
                 ))}
             </div>
 
-            {/* Hint bar */}
+            {/* Interaction Hint bar */}
             <div className="ld-hud-footer">
               <span className="ld-hud-hint">
                 <Icon name="sparkles" size={12} />
-                <span>Hover or drag in 3D to tilt · Click cards to focus</span>
+                <span>
+                  {activeItem.isBall
+                    ? 'Drag to rotate Trionda ball 360° · Rest on stadium pitch turf'
+                    : 'Hover or drag in 3D to tilt · Click ball or cards to focus'}
+                </span>
               </span>
               <span className="ld-hud-timer-badge">
-                {isPaused ? '⏸ Paused' : '⚡ Auto Rotating'}
+                {isPaused ? '⏸ Focused' : '⚡ Auto Rotating'}
               </span>
             </div>
           </div>

@@ -50,6 +50,7 @@ export const imageEndpoints = {
   playerImage: (playerId) => `/api/players/${playerId}/image`,
   teamLogo: (teamId) => `/api/teams/${teamId}/logo`,
   ownAvatar: () => '/api/users/me/avatar',
+  userAvatar: (userId) => `/api/users/${userId}/avatar`,
 };
 
 /**

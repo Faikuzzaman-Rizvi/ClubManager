@@ -59,6 +59,41 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<UserWithAvatar>(sql, new { UserId = userId });
     }
 
+    public async Task<UserDetail?> GetDetailByIdAsync(int userId)
+    {
+        const string sql = """
+            SELECT
+                u.UserId,
+                u.Username,
+                u.Role,
+                COALESCE(u.TeamId, p.TeamId) AS TeamId,
+                t.TeamName,
+                t.LogoUrl AS TeamLogoUrl,
+                u.CreatedAt,
+                u.AvatarUrl,
+                p.PlayerId,
+                p.Name AS PlayerName,
+                p.Position,
+                p.JerseyNumber,
+                p.Age,
+                COALESCE(u.AvatarUrl, p.ImageUrl) AS EffectiveAvatarUrl
+            FROM dbo.Users u
+            LEFT JOIN dbo.Players p ON p.UserId = u.UserId
+            LEFT JOIN dbo.Teams t ON t.TeamId = COALESCE(u.TeamId, p.TeamId)
+            WHERE u.UserId = @UserId;
+            """;
+
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<UserDetail>(sql, new { UserId = userId });
+    }
+
+    public async Task<string?> GetPasswordHashByIdAsync(int userId)
+    {
+        const string sql = "SELECT PasswordHash FROM dbo.Users WHERE UserId = @UserId;";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<string?>(sql, new { UserId = userId });
+    }
+
     public async Task<bool> UsernameExistsAsync(string username)
     {
         const string sql = "SELECT COUNT(1) FROM dbo.Users WHERE Username = @Username;";
@@ -66,6 +101,37 @@ public class UserRepository : IUserRepository
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<int>(sql, new { Username = username }) > 0;
     }
+
+    public async Task<bool> UsernameExistsForOtherUserAsync(string username, int userId)
+    {
+        const string sql = "SELECT COUNT(1) FROM dbo.Users WHERE Username = @Username AND UserId <> @UserId;";
+
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(sql, new { Username = username, UserId = userId }) > 0;
+    }
+
+    public async Task<bool> UpdateUserAsync(int userId, string username, string? passwordHash, int? teamId)
+    {
+        const string sql = """
+            UPDATE dbo.Users
+            SET Username = @Username,
+                TeamId = @TeamId,
+                PasswordHash = COALESCE(@PasswordHash, PasswordHash)
+            WHERE UserId = @UserId;
+            """;
+
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(sql, new
+        {
+            UserId = userId,
+            Username = username,
+            PasswordHash = passwordHash,
+            TeamId = teamId
+        });
+
+        return rows > 0;
+    }
+
 
     public async Task<int> CreateAsync(User user)
     {
